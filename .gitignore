@@ -1,0 +1,38 @@
+# React Native
+node_modules/
+.gradle/
+build/
+android/app/build/
+android/.gradle/
+android/app/debug/
+android/app/release/
+*.keystore
+*.jks
+
+# iOS
+ios/Pods/
+ios/build/
+ios/*.xcworkspace
+ios/*.xcodeproj/project.xcworkspace/
+ios/*.xcodeproj/xcuserdata/
+
+# Metro
+.metro-health-check*
+
+# Debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Misc
+*.log
+.idea/
+.vscode/

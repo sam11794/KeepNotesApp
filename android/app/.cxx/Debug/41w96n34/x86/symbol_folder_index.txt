@@ -1,0 +1,1 @@
+C:\SB\React-Native-Claude-Ollama\KeepNotesApp\android\app\build\intermediates\cxx\Debug\41w96n34\obj\x86

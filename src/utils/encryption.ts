@@ -1,74 +1,101 @@
 /**
- * Encryption Helper Module
+ * Portable Password-Based Encryption Module
  *
- * This module handles AES encryption/decryption of note content.
- * Uses a fixed secret key for simplicity (can be improved later with key management).
+ * Uses PBKDF2 to derive key from password, then AES-256 to encrypt.
+ * Output format: { iv, salt, encryptedData } - all base64 encoded.
  */
 
-// IMPORTANT: This polyfill MUST be imported first before crypto-js
-// It provides crypto.getRandomValues() which crypto-js needs for AES
 import 'react-native-get-random-values';
-
 import CryptoJS from 'crypto-js';
 
-// ============================================================
-// SECRET KEY - Used for AES encryption/decryption
-// ============================================================
-// NOTE: This is a fixed key for simplicity. In production,
-// you should use secure key management (e.g., device KeyStore).
-// ============================================================
-const SECRET_KEY = 'my-super-secret-key-12345';
+const ITERATIONS = 10000;
+const KEY_SIZE = 256 / 32; // 8 (words = 256 bits)
+const SALT_SIZE = 128 / 8; // 16 bytes
+const IV_SIZE = 128 / 8; // 16 bytes
 
 /**
- * Encrypts plain text using AES encryption
- *
- * @param text - The plain text to encrypt
- * @returns The encrypted text (cipher text)
- *
- * HOW IT WORKS:
- * 1. Takes plain text as input
- * 2. Uses AES algorithm with SECRET_KEY to encrypt
- * 3. Returns the encrypted string
- *
- * Example:
- *   encrypt("Hello World") -> "U2FsdGVkX1..."
+ * Encrypts plain text using password-based AES-256 encryption.
  */
-export const encrypt = (text: string): string => {
-  // CryptoJS.AES.encrypt takes:
-  // - text: the text to encrypt
-  // - key: the secret key used for encryption
-  // Returns a cipher text string
-  const encrypted = CryptoJS.AES.encrypt(text, SECRET_KEY).toString();
-  return encrypted;
+export const encryptWithPassword = (plainText: string, password: string): string => {
+  // Generate random salt
+  const salt = CryptoJS.lib.WordArray.random(SALT_SIZE);
+
+  // Derive key from password using PBKDF2
+  const key = CryptoJS.PBKDF2(password, salt, {
+    keySize: KEY_SIZE,
+    iterations: ITERATIONS,
+    hasher: CryptoJS.algo.SHA256,
+  });
+
+  // Generate random IV
+  const iv = CryptoJS.lib.WordArray.random(IV_SIZE);
+
+  // Encrypt using AES-256-CBC
+  const encrypted = CryptoJS.AES.encrypt(plainText, key, {
+    iv: iv,
+    mode: CryptoJS.mode.CBC,
+    padding: CryptoJS.pad.Pkcs7,
+  });
+
+  // Return JSON with base64 encoded values
+  return JSON.stringify({
+    iv: iv.toString(CryptoJS.enc.Base64),
+    salt: salt.toString(CryptoJS.enc.Base64),
+    encryptedData: encrypted.ciphertext.toString(CryptoJS.enc.Base64),
+  });
 };
 
 /**
- * Decrypts encrypted text back to plain text
- *
- * @param cipherText - The encrypted text to decrypt
- * @returns The decrypted plain text
- *
- * HOW IT WORKS:
- * 1. Takes encrypted text (cipher text) as input
- * 2. Uses AES algorithm with SECRET_KEY to decrypt
- * 3. Returns the original plain text
- *
- * Example:
- *   decrypt("U2FsdGVkX1...") -> "Hello World"
+ * Decrypts a password-encrypted JSON string.
  */
-export const decrypt = (cipherText: string): string => {
+export const decryptWithPassword = (encryptedJson: string, password: string): string => {
   try {
-    // CryptoJS.AES.decrypt takes:
-    // - cipherText: the encrypted text
-    // - key: the secret key used for decryption
-    const decrypted = CryptoJS.AES.decrypt(cipherText, SECRET_KEY);
+    // Parse the JSON
+    const data = JSON.parse(encryptedJson);
+    const { iv, salt, encryptedData } = data;
 
-    // IMPORTANT: Must specify UTF-8 encoding to get actual readable text
-    // Without this, it returns cipher object representation, not actual text
-    return decrypted.toString(CryptoJS.enc.Utf8);
+    // Parse base64 strings back to WordArrays
+    const ivWordArray = CryptoJS.enc.Base64.parse(iv);
+    const saltWordArray = CryptoJS.enc.Base64.parse(salt);
+    const ciphertextWordArray = CryptoJS.enc.Base64.parse(encryptedData);
+
+    // Derive the same key from password and salt
+    const key = CryptoJS.PBKDF2(password, saltWordArray, {
+      keySize: KEY_SIZE,
+      iterations: ITERATIONS,
+      hasher: CryptoJS.algo.SHA256,
+    });
+
+    // Create cipher params object
+    const cipherParams = CryptoJS.lib.CipherParams.create({
+      ciphertext: ciphertextWordArray,
+    });
+
+    // Decrypt
+    const decrypted = CryptoJS.AES.decrypt(cipherParams, key, {
+      iv: ivWordArray,
+      mode: CryptoJS.mode.CBC,
+      padding: CryptoJS.pad.Pkcs7,
+    });
+
+    // Convert to UTF-8 string
+    const decryptedText = decrypted.toString(CryptoJS.enc.Utf8);
+
+    console.log('DECRYPTED RAW:', decryptedText);
+    console.log('DECRYPTED LENGTH:', decryptedText.length);
+
+    return decryptedText;
   } catch (error) {
-    console.log('DECRYPT ERROR:', error);
-    // If decryption fails, return empty string
+    console.log('Decryption failed:', error);
     return '';
   }
+};
+
+// Keep old functions for backward compatibility with existing DB encryption
+export const encrypt = (text: string): string => {
+  return encryptWithPassword(text, 'my-super-secret-key-12345');
+};
+
+export const decrypt = (cipherText: string): string => {
+  return decryptWithPassword(cipherText, 'my-super-secret-key-12345');
 };

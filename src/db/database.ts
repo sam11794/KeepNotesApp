@@ -1,5 +1,7 @@
 import SQLite from 'react-native-sqlite-storage';
-import {encrypt, decrypt} from '../utils/encryption';
+
+// NOTE: Local DB stores PLAIN TEXT (no encryption)
+// Encryption is only for Google Drive backup/restore
 
 // Enable promises for easier async/await usage
 SQLite.enablePromise(true);
@@ -55,10 +57,10 @@ export const initDB = async (): Promise<void> => {
 /**
  * Add a new note to the database
  *
- * ENCRYPTION FLOW:
+ * FLOW:
  * 1. User enters plain text (title and content)
- * 2. Content is encrypted BEFORE saving to database
- * 3. Encrypted text is stored in SQLite
+ * 2. Content is stored as PLAIN TEXT in SQLite
+ * 3. No local encryption (only Google Drive backup is encrypted)
  *
  * Returns the id of the newly inserted note
  */
@@ -102,40 +104,23 @@ export const addNote = async (title: string, content: string): Promise<number> =
   console.log('  created_at:', created_at);
 
   // ============================================================
-  // STEP 3: Encrypt content
+  // STEP 3: Store PLAIN TEXT (no encryption for local DB)
   // ============================================================
-  console.log('STEP 3: Encrypting content...');
-  console.log('  Before encryption - content:', JSON.stringify(content));
-
-  let encryptedContent: string;
-  try {
-    encryptedContent = encrypt(content);
-    console.log('STEP 3: Encryption SUCCESS');
-    console.log('  Encrypted length:', encryptedContent?.length);
-    console.log('  Encrypted value:', encryptedContent);
-  } catch (encryptError) {
-    console.error('STEP 3: Encryption FAILED:', encryptError);
-    throw encryptError;
-  }
-
-  // Check if encryption returned valid value
-  if (!encryptedContent) {
-    console.error('STEP 3: FAIL - encrypt() returned empty/null');
-    throw new Error('Encryption returned empty value');
-  }
+  console.log('STEP 3: Storing plain text...');
+  console.log('  content:', JSON.stringify(content));
 
   // ============================================================
   // STEP 4: Insert into database
   // ============================================================
   console.log('STEP 4: Inserting into database...');
   console.log('  SQL: INSERT INTO notes (title, content, created_at) VALUES (?, ?, ?)');
-  console.log('  Params: [', title, ', ', encryptedContent.substring(0, 50) + '...', ', ', created_at, ']');
+  console.log('  Params: [', title, ', ', content.substring(0, 50) + '...', ', ', created_at, ']');
 
   let result: SQLite.ResultSet;
   try {
     result = await db.executeSql(
       'INSERT INTO notes (title, content, created_at) VALUES (?, ?, ?)',
-      [title, encryptedContent, created_at]
+      [title, content, created_at]
     );
     console.log('STEP 4: DB INSERT SUCCESS');
     console.log('  result.insertId:', result.insertId);
@@ -159,10 +144,9 @@ export const addNote = async (title: string, content: string): Promise<number> =
 /**
  * Get all notes from the database
  *
- * DECRYPTION FLOW:
- * 1. Fetch encrypted notes from SQLite
- * 2. Decrypt each note's content
- * 3. Return decrypted notes to display in UI
+ * FLOW:
+ * 1. Fetch notes from SQLite (stored as plain text)
+ * 2. Return notes as-is to display in UI
  *
  * Returns notes ordered by created_at descending (newest first)
  */
@@ -183,12 +167,11 @@ export const fetchNotes = async (): Promise<Note[]> => {
   for (let i = 0; i < result.rows.length; i++) {
     const row = result.rows.item(i);
     // Create a NEW note object (don't mutate the original row)
-    // DECRYPT the content before returning
-    // So UI gets plain text that users can read
+    // Content is stored as plain text, return as-is
     const note: Note = {
       id: row.id,
       title: row.title || '',
-      content: row.content ? decrypt(row.content) : '',
+      content: row.content || '',
       created_at: row.created_at,
     };
     notes.push(note);
@@ -201,9 +184,9 @@ export const fetchNotes = async (): Promise<Note[]> => {
 /**
  * Update an existing note
  *
- * ENCRYPTION FLOW:
+ * FLOW:
  * 1. User edits note with new content
- * 2. New content is encrypted BEFORE updating database
+ * 2. New content is stored as PLAIN TEXT
  *
  * Updates title and content for the note with the given id
  */
@@ -218,13 +201,10 @@ export const updateNote = async (
     await initDB();
   }
 
-  // ENCRYPT the new content before updating in database
-  const encryptedContent = encrypt(content);
-
-  // Update the note with the matching id
+  // Store plain text (no encryption for local DB)
   await db.executeSql(
     'UPDATE notes SET title = ?, content = ? WHERE id = ?',
-    [title, encryptedContent, id]
+    [title, content, id]
   );
 
   console.log('DB: Note updated, id:', id);

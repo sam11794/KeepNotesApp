@@ -6,8 +6,8 @@ import {
   StyleSheet,
   SafeAreaView,
   Alert,
-  TextInput,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 import {
   backupToGoogleDrive,
@@ -21,44 +21,22 @@ initGoogleSignIn();
 const SettingsScreen: React.FC = () => {
   const [isBackupModalVisible, setIsBackupModalVisible] = useState(false);
   const [isRestoreModalVisible, setIsRestoreModalVisible] = useState(false);
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   // ========== BACKUP FUNCTIONS ==========
 
   const openBackupModal = () => {
-    setPassword('');
-    setConfirmPassword('');
     setIsBackupModalVisible(true);
   };
 
   const handleBackup = async () => {
-    // Validate password
-    if (!password.trim()) {
-      Alert.alert('Error', 'Please enter a password');
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
-    }
-
     setIsLoading(true);
     try {
-      // Backup to Google Drive
-      await backupToGoogleDrive(password);
+      // Backup to Google Drive (uses email automatically, no password needed)
+      await backupToGoogleDrive();
 
       Alert.alert('Success', 'Notes backed up to Google Drive successfully!');
       setIsBackupModalVisible(false);
-      setPassword('');
-      setConfirmPassword('');
     } catch (error: any) {
       Alert.alert('Backup Failed', error.message || 'Unknown error');
     } finally {
@@ -69,21 +47,15 @@ const SettingsScreen: React.FC = () => {
   // ========== RESTORE FUNCTIONS ==========
 
   const openRestoreModal = () => {
-    setPassword('');
     setIsRestoreModalVisible(true);
   };
 
   const handleRestore = async () => {
-    if (!password.trim()) {
-      Alert.alert('Error', 'Please enter the password used during backup');
-      return;
-    }
-
     setIsLoading(true);
     try {
-      // Restore from Google Drive
+      // Restore from Google Drive (uses email automatically, no password needed)
       const {notes: restoredNotes, addNoteDirect} =
-        await restoreFromGoogleDrive(password);
+        await restoreFromGoogleDrive();
 
       if (!restoredNotes || restoredNotes.length === 0) {
         Alert.alert('No Data', 'No notes found in backup');
@@ -103,7 +75,6 @@ const SettingsScreen: React.FC = () => {
             onPress: () => {
               setIsRestoreModalVisible(false);
               setIsLoading(false);
-              setPassword('');
             },
           },
           {
@@ -136,7 +107,6 @@ const SettingsScreen: React.FC = () => {
   ) => {
     try {
       for (const note of restoredNotes) {
-        // addNoteDirect bypasses encryption since content is already encrypted
         await addNoteDirect(note.title, note.content, note.created_at);
       }
       Alert.alert('Success', 'Notes merged successfully!');
@@ -144,7 +114,6 @@ const SettingsScreen: React.FC = () => {
       Alert.alert('Merge Failed', error.message);
     } finally {
       setIsLoading(false);
-      setPassword('');
     }
   };
 
@@ -179,7 +148,6 @@ const SettingsScreen: React.FC = () => {
       Alert.alert('Restore Failed', error.message);
     } finally {
       setIsLoading(false);
-      setPassword('');
     }
   };
 
@@ -215,18 +183,18 @@ const SettingsScreen: React.FC = () => {
         <View style={styles.infoSection}>
           <Text style={styles.infoTitle}>About Backup</Text>
           <Text style={styles.infoText}>
-            - Your notes are encrypted with your password before uploading
+            - Your notes are encrypted with your Google account
           </Text>
           <Text style={styles.infoText}>
             - Only the encrypted file is stored on Google Drive
           </Text>
           <Text style={styles.infoText}>
-            - You need your password to restore notes on any device
+            - Sign in with the same account to restore
           </Text>
         </View>
       </View>
 
-      {/* Backup Password Modal */}
+      {/* Backup Confirmation Modal */}
       <Modal
         visible={isBackupModalVisible}
         transparent
@@ -234,37 +202,16 @@ const SettingsScreen: React.FC = () => {
         onRequestClose={() => setIsBackupModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Set Backup Password</Text>
+            <Text style={styles.modalTitle}>Backup to Google Drive</Text>
             <Text style={styles.modalSubtitle}>
-              This password will be required to restore your notes
+              Your notes will be encrypted with your Google account and uploaded
+              to your Drive.
             </Text>
-
-            <TextInput
-              style={styles.input}
-              placeholder="Enter password (min 6 characters)"
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-              autoCapitalize="none"
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Confirm password"
-              secureTextEntry
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              autoCapitalize="none"
-            />
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={styles.cancelButton}
-                onPress={() => {
-                  setIsBackupModalVisible(false);
-                  setPassword('');
-                  setConfirmPassword('');
-                }}
+                onPress={() => setIsBackupModalVisible(false)}
                 disabled={isLoading}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
@@ -285,7 +232,7 @@ const SettingsScreen: React.FC = () => {
         </View>
       </Modal>
 
-      {/* Restore Password Modal */}
+      {/* Restore Confirmation Modal */}
       <Modal
         visible={isRestoreModalVisible}
         transparent
@@ -293,27 +240,16 @@ const SettingsScreen: React.FC = () => {
         onRequestClose={() => setIsRestoreModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Enter Backup Password</Text>
+            <Text style={styles.modalTitle}>Restore from Google Drive</Text>
             <Text style={styles.modalSubtitle}>
-              Enter the password used when creating the backup
+              Sign in with the same Google account you used for backup to restore
+              your notes.
             </Text>
-
-            <TextInput
-              style={styles.input}
-              placeholder="Enter backup password"
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-              autoCapitalize="none"
-            />
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={styles.cancelButton}
-                onPress={() => {
-                  setIsRestoreModalVisible(false);
-                  setPassword('');
-                }}
+                onPress={() => setIsRestoreModalVisible(false)}
                 disabled={isLoading}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>

@@ -22,6 +22,11 @@ interface BackupFile {
   mimeType: string;
 }
 
+interface GoogleSignInResult {
+  accessToken: string;
+  email: string;
+}
+
 /**
  * Initialize Google Sign-In
  */
@@ -40,9 +45,9 @@ export const initGoogleSignIn = () => {
 
 /**
  * Sign in with Google
- * @returns access token for API calls
+ * @returns object containing access token and user email
  */
-export const signInWithGoogle = async (): Promise<string> => {
+export const signInWithGoogle = async (): Promise<GoogleSignInResult> => {
   console.log('[GoogleDrive] ===== SIGN IN FLOW START =====');
   console.log('[GoogleDrive] Step 1: Checking play services...');
 
@@ -61,7 +66,7 @@ export const signInWithGoogle = async (): Promise<string> => {
   try {
     const userInfo = await GoogleSignin.signIn();
     console.log('[GoogleDrive] Step 2: Sign in successful!');
-    console.log('[GoogleDrive] User info:', JSON.stringify(userInfo, null, 2));
+    console.log('[GoogleDrive] User email:', userInfo.user?.email);
   } catch (error: any) {
     console.log('[GoogleDrive] Step 2 ERROR: signIn failed!');
     console.log('[GoogleDrive] Error code:', error.code);
@@ -85,9 +90,11 @@ export const signInWithGoogle = async (): Promise<string> => {
     const tokens = await GoogleSignin.getTokens();
     console.log('[GoogleDrive] Step 3: Tokens received');
     console.log('[GoogleDrive] Access token:', tokens.accessToken ? 'present' : 'missing');
-    console.log('[GoogleDrive] Refresh token:', tokens.refreshToken ? 'present' : 'missing');
     console.log('[GoogleDrive] ===== SIGN IN FLOW SUCCESS =====');
-    return tokens.accessToken;
+    return {
+      accessToken: tokens.accessToken,
+      email: (await GoogleSignin.getCurrentUser())?.user?.email || ''
+    };
   } catch (error: any) {
     console.log('[GoogleDrive] Step 3 ERROR: getTokens failed!');
     console.log('[GoogleDrive] Error:', error);
@@ -337,19 +344,19 @@ const addNoteDirect = async (
 
 /**
  * BACKUP: Save all notes to Google Drive
- * @param password - Password for encryption
+ * Uses user's Google email as encryption key (NO password needed)
  */
-export const backupToGoogleDrive = async (password: string): Promise<boolean> => {
+export const backupToGoogleDrive = async (): Promise<boolean> => {
   console.log('[GoogleDrive] ===== BACKUP FLOW START =====');
-  console.log('[GoogleDrive] Password length:', password.length);
 
   try {
-    // 1. Sign in and get access token
+    // 1. Sign in and get access token + email
     console.log('[GoogleDrive] Step 1: Signing in to Google...');
-    const accessToken = await signInWithGoogle();
+    const {accessToken, email} = await signInWithGoogle();
     console.log('[GoogleDrive] Step 1: Got access token');
+    console.log('[GoogleDrive] Step 1: User email:', email);
 
-    // 2. Get raw (encrypted) notes from database
+    // 2. Get raw (plain text) notes from database
     console.log('[GoogleDrive] Step 2: Fetching notes from database...');
     const notes = await getRawNotes();
 
@@ -364,17 +371,17 @@ export const backupToGoogleDrive = async (password: string): Promise<boolean> =>
     const notesData = notes.map(note => ({
       id: note.id,
       title: note.title,
-      content: note.content, // This is already encrypted from SQLite
+      content: note.content, // Plain text from SQLite
       created_at: note.created_at,
     }));
 
     console.log('[GoogleDrive] Step 3: Notes data prepared');
     console.log('[GoogleDrive] JSON string length:', JSON.stringify(notesData).length);
 
-    // 4. Encrypt the JSON with password
-    console.log('[GoogleDrive] Step 4: Encrypting notes data...');
+    // 4. Encrypt the JSON with user's email as password
+    console.log('[GoogleDrive] Step 4: Encrypting notes data with email:', email);
     const {encryptData} = require('../utils/crypto');
-    const encryptedPayload = encryptData(notesData, password);
+    const encryptedPayload = encryptData(notesData, email);
     if (!encryptedPayload) {
       throw new Error('Encryption failed');
     }
@@ -405,18 +412,17 @@ export const backupToGoogleDrive = async (password: string): Promise<boolean> =>
 
 /**
  * RESTORE: Get notes from Google Drive
- * @param password - Password for decryption
+ * Uses user's Google email as encryption key (NO password needed)
  * @returns Array of restored notes
  */
-export const restoreFromGoogleDrive = async (
-  password: string
-): Promise<{notes: Note[]; addNoteDirect: typeof addNoteDirect}> => {
+export const restoreFromGoogleDrive = async (): Promise<{notes: Note[]; addNoteDirect: typeof addNoteDirect}> => {
   console.log('[GoogleDrive] ===== RESTORE FLOW START =====');
 
   try {
-    // 1. Sign in and get access token
+    // 1. Sign in and get access token + email
     console.log('[GoogleDrive] Step 1: Signing in to Google...');
-    const accessToken = await signInWithGoogle();
+    const {accessToken, email} = await signInWithGoogle();
+    console.log('[GoogleDrive] Step 1: User email:', email);
 
     // 2. Get backup folder
     console.log('[GoogleDrive] Step 2: Getting backup folder...');
@@ -434,17 +440,16 @@ export const restoreFromGoogleDrive = async (
     console.log('[GoogleDrive] Step 4: Downloading encrypted file...');
     const encryptedJson = await downloadFile(accessToken, existingFile.id!);
     console.log('[GoogleDrive] Step 4: Downloaded, length:', encryptedJson.length);
-    console.log('[GoogleDrive] Raw content preview:', encryptedJson.substring(0, 200));
 
-    // 5. Decrypt the JSON
-    console.log('[GoogleDrive] Step 5: Decrypting...');
+    // 5. Decrypt the JSON using same email as backup
+    console.log('[GoogleDrive] Step 5: Decrypting with email:', email);
     const {decryptData} = require('../utils/crypto');
     const payload = JSON.parse(encryptedJson);
-    const notesData = decryptData(payload, password);
+    const notesData = decryptData(payload, email);
     console.log('[GoogleDrive] Step 5: Decrypt complete');
 
     if (!notesData) {
-      throw new Error('Decryption failed. Wrong password?');
+      throw new Error('Decryption failed. Wrong account?');
     }
 
     // 6. Notes already parsed by decryptData

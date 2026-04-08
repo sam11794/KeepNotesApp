@@ -1,3 +1,4 @@
+import 'react-native-get-random-values';
 import CryptoJS from "crypto-js";
 
 export const encryptData = (notes, password) => {

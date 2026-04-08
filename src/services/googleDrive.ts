@@ -42,15 +42,41 @@ export const initGoogleSignIn = () => {
  * Sign in with Google
  */
 export const signInWithGoogle = async (): Promise<GoogleSignInResult> => {
-  await GoogleSignin.hasPlayServices();
+  console.log('[GoogleDrive] signInWithGoogle: Starting...');
 
-  const userInfo = await GoogleSignin.signIn();
-  const tokens = await GoogleSignin.getTokens();
+  try {
+    console.log('[GoogleDrive] signInWithGoogle: Checking play services...');
+    await GoogleSignin.hasPlayServices();
+    console.log('[GoogleDrive] signInWithGoogle: Play services available');
 
-  return {
-    accessToken: tokens.accessToken,
-    email: userInfo.user?.email || '',
-  };
+    console.log('[GoogleDrive] signInWithGoogle: Signing in...');
+    const userInfo = await GoogleSignin.signIn();
+    console.log('[GoogleDrive] signInWithGoogle: User signed in, email:', (userInfo as any).user?.email);
+
+    console.log('[GoogleDrive] signInWithGoogle: Getting tokens...');
+    const tokens = await GoogleSignin.getTokens();
+    console.log('[GoogleDrive] signInWithGoogle: Tokens received, accessToken present:', !!tokens.accessToken);
+
+    if (!tokens.accessToken) {
+      throw new Error('No access token received from Google');
+    }
+
+    return {
+      accessToken: tokens.accessToken,
+      email: (userInfo as any).user?.email || '',
+    };
+  } catch (error: any) {
+    console.log('[GoogleDrive] signInWithGoogle: ERROR:', error.message);
+    console.log('[GoogleDrive] signInWithGoogle: ERROR code:', error.code);
+
+    // Provide more helpful error messages
+    if (error.code === -1 || error.code === 'NETWORK_ERROR' || error.message?.includes('NETWORK_ERROR')) {
+      console.log('[GoogleDrive] signInWithGoogle: Network error detected');
+      throw new Error('NETWORK_ERROR: Check your internet connection and Google Play Services');
+    }
+
+    throw error;
+  }
 };
 
 /**
@@ -162,20 +188,58 @@ const uploadFile = async (
 };
 
 /**
- * Download file
+ * Download file with retry
  */
 const downloadFile = async (
   accessToken: string,
   fileId: string
 ): Promise<string> => {
-  const response = await fetch(
-    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
-    {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    }
-  );
+  console.log('[GoogleDrive] downloadFile: Downloading file:', fileId);
+  console.log('[GoogleDrive] downloadFile: Access token present:', !!accessToken);
 
-  return await response.text();
+  let lastError: Error | null = null;
+
+  // Retry up to 2 times on network errors
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      console.log('[GoogleDrive] downloadFile: Attempt', attempt);
+
+      const response = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );
+
+      console.log('[GoogleDrive] downloadFile: Response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log('[GoogleDrive] downloadFile: Error response:', errorText.substring(0, 300));
+        throw new Error('Download failed with status: ' + response.status + ' - ' + errorText.substring(0, 100));
+      }
+
+      const content = await response.text();
+      console.log('[GoogleDrive] downloadFile: Downloaded length:', content.length);
+      return content;
+    } catch (error: any) {
+      console.log('[GoogleDrive] downloadFile: Attempt', attempt, 'failed:', error.message);
+      lastError = error;
+
+      // Only retry on network errors, not on HTTP errors
+      if (error.message.includes('status:') || !error.message.includes('network')) {
+        throw error;
+      }
+
+      // Wait before retry
+      if (attempt < 2) {
+        console.log('[GoogleDrive] downloadFile: Waiting before retry...');
+        await new Promise(resolve => setTimeout(() => resolve(undefined), 1000));
+      }
+    }
+  }
+
+  throw lastError || new Error('Download failed after retries');
 };
 
 /**
@@ -230,19 +294,39 @@ const addNoteDirect = async (
  * BACKUP
  */
 export const backupToGoogleDrive = async (): Promise<boolean> => {
-  const {accessToken, email} = await signInWithGoogle();
+  console.log('[GoogleDrive] ===== BACKUP FLOW START =====');
 
-  const notes = await getRawNotes();
-  if (notes.length === 0) throw new Error('No notes');
+  try {
+    console.log('[GoogleDrive] Step 1: Signing in to Google...');
+    const {accessToken, email} = await signInWithGoogle();
+    console.log('[GoogleDrive] Step 1: Got access token, email:', email);
 
-  const {encryptData} = require('../utils/crypto');
-  const encrypted = encryptData(notes, email);
+    console.log('[GoogleDrive] Step 2: Fetching notes from database...');
+    const notes = await getRawNotes();
+    console.log('[GoogleDrive] Step 2: Got', notes.length, 'notes');
+    if (notes.length === 0) throw new Error('No notes');
 
-  const folderId = await getOrCreateBackupFolder(accessToken);
+    console.log('[GoogleDrive] Step 3: Encrypting notes...');
+    const {encryptData} = require('../utils/crypto');
+    const encrypted = encryptData(notes, email);
+    console.log('[GoogleDrive] Step 3: Encryption complete');
 
-  await uploadFile(accessToken, folderId, JSON.stringify(encrypted));
+    console.log('[GoogleDrive] Step 4: Getting/creating backup folder...');
+    const folderId = await getOrCreateBackupFolder(accessToken);
+    console.log('[GoogleDrive] Step 4: Folder ID:', folderId);
 
-  return true;
+    console.log('[GoogleDrive] Step 5: Uploading file...');
+    await uploadFile(accessToken, folderId, JSON.stringify(encrypted));
+    console.log('[GoogleDrive] Step 5: Upload complete');
+
+    console.log('[GoogleDrive] ===== BACKUP FLOW SUCCESS =====');
+    return true;
+  } catch (error: any) {
+    console.log('[GoogleDrive] ===== BACKUP FLOW FAILED =====');
+    console.log('[GoogleDrive] ERROR:', error.message);
+    console.log('[GoogleDrive] ERROR stack:', error.stack);
+    throw error;
+  }
 };
 
 /**
@@ -252,15 +336,25 @@ export const restoreFromGoogleDrive = async (): Promise<{
   notes: Note[];
   addNoteDirect: typeof addNoteDirect;
 }> => {
+  console.log('[GoogleDrive] ===== RESTORE FLOW START =====');
+
   const {accessToken, email} = await signInWithGoogle();
+  console.log('[GoogleDrive] restore: Got access token and email:', email);
 
   const folderId = await getOrCreateBackupFolder(accessToken);
+  console.log('[GoogleDrive] restore: Got folderId:', folderId);
 
   const file = await getLatestBackupFile(accessToken, folderId);
+  console.log('[GoogleDrive] restore: Got file:', file);
 
   if (!file) throw new Error('No backup found');
 
-  const encryptedJson = await downloadFile(accessToken, file.id!);
+  console.log('[GoogleDrive] restore: Found file:', file.name, 'ID:', file.id);
+
+  if (!file.id) throw new Error('Backup file has no ID');
+
+  const encryptedJson = await downloadFile(accessToken, file.id);
+  console.log('[GoogleDrive] restore: Downloaded JSON length:', encryptedJson?.length);
 
   const {decryptData} = require('../utils/crypto');
 
@@ -268,5 +362,6 @@ export const restoreFromGoogleDrive = async (): Promise<{
 
   if (!notes) throw new Error('Decryption failed');
 
+  console.log('[GoogleDrive] ===== RESTORE FLOW SUCCESS =====');
   return {notes, addNoteDirect};
 };

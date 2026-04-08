@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -7,13 +7,15 @@ import {
   SafeAreaView,
   Alert,
   Modal,
-  ActivityIndicator,
+  Image,
 } from 'react-native';
 import {
   backupToGoogleDrive,
   restoreFromGoogleDrive,
   initGoogleSignIn,
 } from '../services/googleDrive';
+import {GoogleSignin} from '@react-native-google-signin/google-signin';
+import {getUser, saveUser, clearUser, UserProfile} from '../services/user';
 
 // Initialize Google Sign-In when module loads
 initGoogleSignIn();
@@ -22,6 +24,59 @@ const SettingsScreen: React.FC = () => {
   const [isBackupModalVisible, setIsBackupModalVisible] = useState(false);
   const [isRestoreModalVisible, setIsRestoreModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [signedIn, setSignedIn] = useState(false);
+
+  // Reload user when screen mounts (App.tsx remounts this component on screen switch)
+  useEffect(() => {
+    loadUserProfile();
+  }, []);
+
+  const loadUserProfile = async () => {
+    const user = await getUser();
+    if (user) {
+      setUserProfile(user);
+      setSignedIn(true);
+    } else {
+      const currentUser = await GoogleSignin.getCurrentUser();
+      if (currentUser?.user) {
+        const profile: UserProfile = {
+          name: currentUser.user.name || 'Guest User',
+          email: currentUser.user.email || '',
+          photo: currentUser.user.photo || undefined,
+        };
+        setUserProfile(profile);
+        await saveUser(profile);
+        setSignedIn(true);
+      } else {
+        setUserProfile(null);
+        setSignedIn(false);
+      }
+    }
+  };
+
+  // ========== SIGN IN FUNCTION ==========
+  const handleSignIn = async () => {
+    try {
+      setIsLoading(true);
+      await GoogleSignin.signIn();
+      const currentUser = await GoogleSignin.getCurrentUser();
+      if (currentUser?.user) {
+        const profile: UserProfile = {
+          name: currentUser.user.name || 'Guest User',
+          email: currentUser.user.email || '',
+          photo: currentUser.user.photo || undefined,
+        };
+        await saveUser(profile);
+        setUserProfile(profile);
+        setSignedIn(true);
+      }
+    } catch (error: any) {
+      Alert.alert('Sign In Failed', error.message || 'Unknown error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // ========== BACKUP FUNCTIONS ==========
 
@@ -32,13 +87,12 @@ const SettingsScreen: React.FC = () => {
   const handleBackup = async () => {
     setIsLoading(true);
     try {
-      // Backup to Google Drive (uses email automatically, no password needed)
       await backupToGoogleDrive();
-
       Alert.alert('Success', 'Notes backed up to Google Drive successfully!');
       setIsBackupModalVisible(false);
     } catch (error: any) {
-      Alert.alert('Backup Failed', error.message || 'Unknown error');
+      console.log('[SettingsScreen] Backup error:', error);
+      Alert.alert('Backup Failed', error.message || error.code || 'Unknown error');
     } finally {
       setIsLoading(false);
     }
@@ -53,7 +107,6 @@ const SettingsScreen: React.FC = () => {
   const handleRestore = async () => {
     setIsLoading(true);
     try {
-      // Restore from Google Drive (uses email automatically, no password needed)
       const {notes: restoredNotes, addNoteDirect} =
         await restoreFromGoogleDrive();
 
@@ -64,7 +117,6 @@ const SettingsScreen: React.FC = () => {
         return;
       }
 
-      // Ask user whether to merge or replace
       Alert.alert(
         'Restore Notes',
         `Found ${restoredNotes.length} notes. How would you like to restore?`,
@@ -127,7 +179,6 @@ const SettingsScreen: React.FC = () => {
     addNoteDirect: Function
   ) => {
     try {
-      // First delete all existing notes
       const SQLite = require('react-native-sqlite-storage');
       SQLite.enablePromise(true);
 
@@ -138,7 +189,6 @@ const SettingsScreen: React.FC = () => {
 
       await db.executeSql('DELETE FROM notes');
 
-      // Then add all restored notes
       for (const note of restoredNotes) {
         await addNoteDirect(note.title, note.content, note.created_at);
       }
@@ -151,9 +201,60 @@ const SettingsScreen: React.FC = () => {
     }
   };
 
+  // ========== LOGOUT FUNCTION ==========
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        {text: 'Cancel', style: 'cancel'},
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await GoogleSignin.signOut();
+              await clearUser();
+              setUserProfile(null);
+              setSignedIn(false);
+              Alert.alert('Signed out', 'You have been signed out successfully.');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to sign out. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
+        {/* Conditional: Signed In = Show Profile, Not Signed In = Show Sign In Button */}
+        {signedIn ? (
+          <>
+            {/* Profile Section - Shown when signed in */}
+            <View style={styles.profileSection}>
+              <Image
+                source={{uri: userProfile?.photo || 'https://via.placeholder.com/80'}}
+                style={styles.avatar}
+              />
+              <Text style={styles.userName}>{userProfile?.name || 'Guest User'}</Text>
+              <Text style={styles.userEmail}>{userProfile?.email || 'Not signed in'}</Text>
+            </View>
+            <View style={styles.profileDivider} />
+          </>
+        ) : (
+          <>
+            {/* Sign In Button - Shown when not signed in */}
+            <TouchableOpacity style={styles.signInButton} onPress={handleSignIn} disabled={isLoading}>
+              <Text style={styles.signInButtonText}>🔐 Sign In with Google</Text>
+            </TouchableOpacity>
+            <View style={styles.profileDivider} />
+          </>
+        )}
+
         <Text style={styles.title}>Settings</Text>
         <Text style={styles.subtitle}>App version: 1.0.0</Text>
 
@@ -178,6 +279,13 @@ const SettingsScreen: React.FC = () => {
             </Text>
           </View>
         </TouchableOpacity>
+
+        {/* Conditional: Show Logout button only when signed in */}
+        {signedIn && (
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutButtonText}>🚪 Sign Out</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Info Section */}
         <View style={styles.infoSection}>
@@ -282,6 +390,36 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
+  // Profile section styles
+  profileSection: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginBottom: 12,
+    backgroundColor: '#ddd',
+  },
+  userName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  userEmail: {
+    fontSize: 14,
+    color: '#666',
+  },
+  profileDivider: {
+    height: 1,
+    backgroundColor: '#eee',
+    marginBottom: 16,
+  },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
@@ -323,8 +461,34 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#666',
   },
+  signInButton: {
+    backgroundColor: '#4285f4',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  signInButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  logoutButton: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e74c3c',
+  },
+  logoutButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#e74c3c',
+  },
   infoSection: {
-    marginTop: 30,
+    marginTop: 10,
     backgroundColor: '#fff',
     padding: 16,
     borderRadius: 12,

@@ -118,7 +118,7 @@ export const addNote = async (title: string, content: string): Promise<number> =
 
   let result: SQLite.ResultSet;
   try {
-    result = await db.executeSql(
+    [result] = await db!.executeSql(
       'INSERT INTO notes (title, content, created_at) VALUES (?, ?, ?)',
       [title, content, created_at]
     );
@@ -158,7 +158,7 @@ export const fetchNotes = async (): Promise<Note[]> => {
   }
 
   // Select all notes from database
-  const [result] = await db.executeSql(
+  const [result] = await db!.executeSql(
     'SELECT * FROM notes ORDER BY created_at DESC'
   );
 
@@ -202,7 +202,7 @@ export const updateNote = async (
   }
 
   // Store plain text (no encryption for local DB)
-  await db.executeSql(
+  await db!.executeSql(
     'UPDATE notes SET title = ?, content = ? WHERE id = ?',
     [title, content, id]
   );
@@ -222,7 +222,7 @@ export const deleteNote = async (id: number): Promise<void> => {
   }
 
   // Delete the note with the matching id
-  await db.executeSql('DELETE FROM notes WHERE id = ?', [id]);
+  await db!.executeSql('DELETE FROM notes WHERE id = ?', [id]);
 
   console.log('DB: Note deleted, id:', id);
 };

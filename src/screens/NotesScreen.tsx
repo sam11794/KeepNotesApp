@@ -10,12 +10,14 @@ import {
   Dimensions,
   SafeAreaView,
   Modal,
+  ScrollView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import {initDB, fetchNotes, addNote, updateNote, deleteNote, Note} from '../db/database';
 
-// Get screen width for 2-column grid layout
+// Get screen dimensions for layout
 const SCREEN_WIDTH = Dimensions.get('window').width;
+const SCREEN_HEIGHT = Dimensions.get('window').height;
 const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2;
 
 // Props interface for drawer navigation callback
@@ -210,6 +212,10 @@ const NotesScreen: React.FC<NotesScreenProps> = ({onOpenDrawer}) => {
         onRequestClose={handleCancelEdit}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{paddingBottom: 20}}
+            keyboardShouldPersistTaps="handled">
             <Text style={styles.modalTitle}>
               {editingNote ? 'Edit Note' : 'New Note'}
             </Text>
@@ -228,19 +234,20 @@ const NotesScreen: React.FC<NotesScreenProps> = ({onOpenDrawer}) => {
               onChangeText={setContent}
               multiline
             />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={handleCancelEdit}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.saveButton}
-                onPress={handleSaveNote}>
-                <Text style={styles.saveButtonText}>Save</Text>
-              </TouchableOpacity>
-            </View>
+          </ScrollView>
+          <View style={styles.modalButtons}>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={handleCancelEdit}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.saveButton}
+              onPress={handleSaveNote}>
+              <Text style={styles.saveButtonText}>Save</Text>
+            </TouchableOpacity>
           </View>
+        </View>
         </View>
       </Modal>
     </SafeAreaView>
@@ -380,7 +387,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 20,
+    maxHeight: SCREEN_HEIGHT * 0.8,
   },
   modalTitle: {
     fontSize: 20,
@@ -405,6 +413,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Roboto-Regular',
     minHeight: 100,
+    maxHeight: 150,
     textAlignVertical: 'top',
     marginBottom: 16,
   },

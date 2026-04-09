@@ -8,6 +8,7 @@ import {
   Alert,
   Modal,
   Image,
+  ScrollView,
 } from 'react-native';
 import {
   backupToGoogleDrive,
@@ -16,6 +17,7 @@ import {
 } from '../services/googleDrive';
 import {GoogleSignin} from '@react-native-google-signin/google-signin';
 import {getUser, saveUser, clearUser, UserProfile} from '../services/user';
+import Icon from 'react-native-vector-icons/FontAwesome5';
 
 // Initialize Google Sign-In when module loads
 initGoogleSignIn();
@@ -27,7 +29,6 @@ const SettingsScreen: React.FC = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [signedIn, setSignedIn] = useState(false);
 
-  // Reload user when screen mounts (App.tsx remounts this component on screen switch)
   useEffect(() => {
     loadUserProfile();
   }, []);
@@ -55,7 +56,6 @@ const SettingsScreen: React.FC = () => {
     }
   };
 
-  // ========== SIGN IN FUNCTION ==========
   const handleSignIn = async () => {
     try {
       setIsLoading(true);
@@ -78,8 +78,6 @@ const SettingsScreen: React.FC = () => {
     }
   };
 
-  // ========== BACKUP FUNCTIONS ==========
-
   const openBackupModal = () => {
     setIsBackupModalVisible(true);
   };
@@ -97,8 +95,6 @@ const SettingsScreen: React.FC = () => {
       setIsLoading(false);
     }
   };
-
-  // ========== RESTORE FUNCTIONS ==========
 
   const openRestoreModal = () => {
     setIsRestoreModalVisible(true);
@@ -201,8 +197,6 @@ const SettingsScreen: React.FC = () => {
     }
   };
 
-  // ========== LOGOUT FUNCTION ==========
-
   const handleLogout = async () => {
     Alert.alert(
       'Sign Out',
@@ -230,85 +224,74 @@ const SettingsScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        {/* Conditional: Signed In = Show Profile, Not Signed In = Show Sign In Button */}
-        {signedIn ? (
-          <>
-            {/* Profile Section - Shown when signed in */}
-            <View style={styles.profileSection}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}>
+        {/* Profile Card */}
+        <View style={styles.card}>
+          {signedIn ? (
+            <View style={styles.profileContent}>
               <Image
                 source={{uri: userProfile?.photo || 'https://via.placeholder.com/80'}}
                 style={styles.avatar}
               />
-              <Text style={styles.userName}>{userProfile?.name || 'Guest User'}</Text>
-              <Text style={styles.userEmail}>{userProfile?.email || 'Not signed in'}</Text>
+              <Text style={styles.profileName}>{userProfile?.name || 'Guest User'}</Text>
+              <Text style={styles.profileEmail}>{userProfile?.email || 'Not signed in'}</Text>
             </View>
-            <View style={styles.profileDivider} />
-          </>
-        ) : (
-          <>
-            {/* Sign In Button - Shown when not signed in */}
-            <TouchableOpacity style={styles.signInButton} onPress={handleSignIn} disabled={isLoading}>
-              <Text style={styles.signInIcon}>🔐</Text>
+          ) : (
+            <TouchableOpacity
+              style={styles.signInButton}
+              onPress={handleSignIn}
+              disabled={isLoading}>
+              <Icon name="google" size={20} color="#fff" solid />
               <Text style={styles.signInButtonText}>Sign In with Google</Text>
             </TouchableOpacity>
-            <View style={styles.profileDivider} />
-          </>
-        )}
+          )}
+        </View>
 
-        <Text style={styles.title}>Settings</Text>
-        <Text style={styles.subtitle}>App version: 1.0.0</Text>
+        {/* Quick Actions */}
+        <Text style={styles.sectionTitle}>Quick Actions</Text>
 
-        {/* Backup Button */}
-        <TouchableOpacity style={styles.button} onPress={openBackupModal}>
-          <View style={styles.buttonIconContainer}>
-            <Text style={styles.buttonIcon}>☁️</Text>
+        <TouchableOpacity style={styles.actionCard} onPress={openBackupModal}>
+          <View style={styles.actionIconContainer}>
+            <Icon name="cloud-upload-alt" size={20} color="#4285F4" solid />
           </View>
-          <View style={styles.buttonTextContainer}>
-            <Text style={styles.buttonTitle}>Backup to Drive</Text>
-            <Text style={styles.buttonDescription}>
-              Save encrypted notes to Google Drive
-            </Text>
+          <View style={styles.actionTextContainer}>
+            <Text style={styles.actionTitle}>Backup to Drive</Text>
+            <Text style={styles.actionSubtitle}>Save encrypted notes to Google Drive</Text>
           </View>
         </TouchableOpacity>
 
-        {/* Restore Button */}
-        <TouchableOpacity style={styles.button} onPress={openRestoreModal}>
-          <View style={styles.buttonIconContainer}>
-            <Text style={styles.buttonIcon}>📥</Text>
+        <TouchableOpacity style={styles.actionCard} onPress={openRestoreModal}>
+          <View style={[styles.actionIconContainer, {backgroundColor: '#e8f5e9'}]}>
+            <Icon name="cloud-download-alt" size={20} color="#34A853" solid />
           </View>
-          <View style={styles.buttonTextContainer}>
-            <Text style={styles.buttonTitle}>Restore from Drive</Text>
-            <Text style={styles.buttonDescription}>
-              Restore notes from Google Drive backup
-            </Text>
+          <View style={styles.actionTextContainer}>
+            <Text style={styles.actionTitle}>Restore from Drive</Text>
+            <Text style={styles.actionSubtitle}>Restore notes from Google Drive backup</Text>
           </View>
         </TouchableOpacity>
 
-        {/* Conditional: Show Logout button only when signed in */}
+        {/* Account Section */}
         {signedIn && (
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutIcon}>🚪</Text>
+            <Icon name="sign-out-alt" size={18} color="#e74c3c" solid />
             <Text style={styles.logoutButtonText}>Sign Out</Text>
           </TouchableOpacity>
         )}
 
         {/* Info Section */}
-        <View style={styles.infoSection}>
+        <View style={styles.infoCard}>
           <Text style={styles.infoTitle}>About Backup</Text>
-          <Text style={styles.infoText}>
-            - Your notes are encrypted with your Google account
-          </Text>
-          <Text style={styles.infoText}>
-            - Only the encrypted file is stored on Google Drive
-          </Text>
-          <Text style={styles.infoText}>
-            - Sign in with the same account to restore
-          </Text>
+          <Text style={styles.infoText}>- Your notes are encrypted with your Google account</Text>
+          <Text style={styles.infoText}>- Only the encrypted file is stored on Google Drive</Text>
+          <Text style={styles.infoText}>- Sign in with the same account to restore</Text>
+          <Text style={[styles.infoText, styles.versionText]}>App version: 1.0.0</Text>
         </View>
-      </View>
+      </ScrollView>
 
-      {/* Backup Confirmation Modal */}
+      {/* Backup Modal */}
       <Modal
         visible={isBackupModalVisible}
         transparent
@@ -318,10 +301,8 @@ const SettingsScreen: React.FC = () => {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Backup to Google Drive</Text>
             <Text style={styles.modalSubtitle}>
-              Your notes will be encrypted with your Google account and uploaded
-              to your Drive.
+              Your notes will be encrypted with your Google account and uploaded to your Drive.
             </Text>
-
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={styles.cancelButton}
@@ -329,12 +310,8 @@ const SettingsScreen: React.FC = () => {
                 disabled={isLoading}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-
               <TouchableOpacity
-                style={[
-                  styles.confirmButton,
-                  isLoading && styles.disabledButton,
-                ]}
+                style={[styles.confirmButton, isLoading && styles.disabledButton]}
                 onPress={handleBackup}
                 disabled={isLoading}>
                 <Text style={styles.confirmButtonText}>
@@ -346,7 +323,7 @@ const SettingsScreen: React.FC = () => {
         </View>
       </Modal>
 
-      {/* Restore Confirmation Modal */}
+      {/* Restore Modal */}
       <Modal
         visible={isRestoreModalVisible}
         transparent
@@ -356,10 +333,8 @@ const SettingsScreen: React.FC = () => {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Restore from Google Drive</Text>
             <Text style={styles.modalSubtitle}>
-              Sign in with the same Google account you used for backup to restore
-              your notes.
+              Sign in with the same Google account you used for backup to restore your notes.
             </Text>
-
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={styles.cancelButton}
@@ -367,12 +342,8 @@ const SettingsScreen: React.FC = () => {
                 disabled={isLoading}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-
               <TouchableOpacity
-                style={[
-                  styles.confirmButton,
-                  isLoading && styles.disabledButton,
-                ]}
+                style={[styles.confirmButton, isLoading && styles.disabledButton]}
                 onPress={handleRestore}
                 disabled={isLoading}>
                 <Text style={styles.confirmButtonText}>
@@ -390,19 +361,28 @@ const SettingsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#F5F5F5',
   },
-  content: {
+  scrollView: {
     flex: 1,
-    padding: 20,
   },
-  // Profile section styles
-  profileSection: {
-    alignItems: 'center',
-    paddingVertical: 20,
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  card: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 16,
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 16,
+    marginTop: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  profileContent: {
+    alignItems: 'center',
   },
   avatar: {
     width: 80,
@@ -411,89 +391,25 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     backgroundColor: '#ddd',
   },
-  userName: {
+  profileName: {
     fontSize: 18,
     fontFamily: 'Roboto-Bold',
     color: '#333',
     marginBottom: 4,
   },
-  userEmail: {
+  profileEmail: {
     fontSize: 14,
     fontFamily: 'Roboto-Regular',
-    color: '#666',
-  },
-  profileDivider: {
-    height: 1,
-    backgroundColor: '#eee',
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontFamily: 'Roboto-Bold',
-    color: '#333',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Regular',
-    color: '#666',
-    marginBottom: 30,
-  },
-  button: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    alignItems: 'center',
-  },
-  buttonIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#fff3e0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  buttonIcon: {
-    fontSize: 20,
-  },
-  signInIcon: {
-    fontSize: 20,
-    marginRight: 8,
-  },
-  logoutIcon: {
-    fontSize: 18,
-    marginRight: 8,
-  },
-  buttonTextContainer: {
-    flex: 1,
-  },
-  buttonTitle: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Medium',
-    color: '#333',
-    marginBottom: 4,
-  },
-  buttonDescription: {
-    fontSize: 13,
-    fontFamily: 'Roboto-Regular',
-    color: '#666',
+    color: '#777',
   },
   signInButton: {
     flexDirection: 'row',
-    backgroundColor: '#4285f4',
-    padding: 16,
+    backgroundColor: '#4285F4',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
   },
   signInButtonText: {
     fontSize: 16,
@@ -501,15 +417,62 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginLeft: 10,
   },
+  sectionTitle: {
+    fontSize: 16,
+    fontFamily: 'Roboto-Medium',
+    color: '#333',
+    marginHorizontal: 16,
+    marginTop: 24,
+    marginBottom: 12,
+  },
+  actionCard: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    alignItems: 'center',
+  },
+  actionIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#e3f2fd',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  actionTextContainer: {
+    flex: 1,
+  },
+  actionTitle: {
+    fontSize: 16,
+    fontFamily: 'Roboto-Medium',
+    color: '#333',
+    marginBottom: 4,
+  },
+  actionSubtitle: {
+    fontSize: 13,
+    fontFamily: 'Roboto-Regular',
+    color: '#777',
+  },
   logoutButton: {
     flexDirection: 'row',
     backgroundColor: '#fff',
-    padding: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
     borderRadius: 12,
-    marginBottom: 16,
+    marginHorizontal: 16,
+    marginBottom: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#e74c3c',
   },
   logoutButtonText: {
@@ -518,11 +481,17 @@ const styles = StyleSheet.create({
     color: '#e74c3c',
     marginLeft: 10,
   },
-  infoSection: {
-    marginTop: 10,
+  infoCard: {
     backgroundColor: '#fff',
+    borderRadius: 16,
     padding: 16,
-    borderRadius: 12,
+    marginHorizontal: 16,
+    marginTop: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
   infoTitle: {
     fontSize: 16,
@@ -533,9 +502,13 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 13,
     fontFamily: 'Roboto-Regular',
-    color: '#666',
+    color: '#777',
     marginBottom: 8,
-    lineHeight: 18,
+    lineHeight: 20,
+  },
+  versionText: {
+    marginTop: 8,
+    marginBottom: 0,
   },
   modalOverlay: {
     flex: 1,
@@ -558,17 +531,9 @@ const styles = StyleSheet.create({
   modalSubtitle: {
     fontSize: 14,
     fontFamily: 'Roboto-Regular',
-    color: '#666',
+    color: '#777',
     marginBottom: 20,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    fontFamily: 'Roboto-Regular',
-    marginBottom: 16,
+    lineHeight: 20,
   },
   modalButtons: {
     flexDirection: 'row',
@@ -588,7 +553,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Roboto-Medium',
   },
   confirmButton: {
-    backgroundColor: '#4285f4',
+    backgroundColor: '#4285F4',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,

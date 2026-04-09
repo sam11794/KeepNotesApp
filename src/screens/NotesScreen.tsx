@@ -187,7 +187,13 @@ const NotesScreen: React.FC<NotesScreenProps> = ({onOpenDrawer}) => {
         columnWrapperStyle={styles.cardRow}
         contentContainerStyle={styles.notesList}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>No notes yet. Tap + to add!</Text>
+          <View style={{alignItems: 'center', marginTop: 60}}>
+            <Icon name="sticky-note" size={40} color="#ccc" solid />
+            <Text style={styles.emptyText}>No notes yet</Text>
+            <Text style={{color: '#aaa', marginTop: 4}}>
+              Tap + to create your first note
+            </Text>
+          </View>
         }
       />
 
@@ -257,7 +263,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 1},
@@ -272,62 +280,64 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontFamily: 'Roboto-Bold',
     marginLeft: 16,
-    color: '#333',
+    color: '#222',
   },
   // Grid layout for notes
   notesList: {
-    paddingHorizontal: 16,
-    paddingBottom: 100,
-    paddingTop: 16,
+    paddingHorizontal: 12,
+    paddingBottom: 120,
+    paddingTop: 12,
   },
   cardRow: {
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   // Individual note card
   card: {
-    width: CARD_WIDTH,
+    flex: 1,
+    marginHorizontal: 4,
     backgroundColor: '#fff',
-    padding: 14,
-    borderRadius: 12,
-    elevation: 2,
+    padding: 12,
+    borderRadius: 16,
+    elevation: 4,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowRadius: 6,
+    justifyContent: 'space-between',
   },
   cardTitle: {
-    fontSize: 15,
-    fontFamily: 'Roboto-Medium',
-    color: '#333',
+    fontSize: 16,
+    fontFamily: 'Roboto-Bold',
+    color: '#111',
     marginBottom: 6,
   },
   cardContent: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: 'Roboto-Regular',
     color: '#555',
-    lineHeight: 18,
+    lineHeight: 20,
     marginBottom: 8,
   },
   cardDate: {
     fontSize: 11,
     fontFamily: 'Roboto-Regular',
     color: '#999',
-    marginBottom: 10,
+    marginBottom: 6,
   },
   cardActions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     borderTopWidth: 1,
-    borderTopColor: '#eee',
-    paddingTop: 8,
+    borderTopColor: '#f0f0f0',
+    paddingTop: 6,
   },
   iconButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    padding: 6,
+    marginLeft: 8,
   },
   editIcon: {
     fontSize: 14,
@@ -339,11 +349,11 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 20,
-    bottom: 80,
+    bottom: 90,
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#f0a500',
+    backgroundColor: '#f4b400',
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 6,
@@ -401,9 +411,9 @@ const styles = StyleSheet.create({
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 12,
   },
   cancelButton: {
+    marginRight: 12,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 20,

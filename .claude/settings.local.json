@@ -9,7 +9,13 @@
       "Bash(npm uninstall:*)",
       "Bash(./gradlew.bat assembleDebug)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(npm list:*)",
+      "Bash(npx react-native-asset:*)",
+      "Bash(cp appicononline.png ic_launcher.png)",
+      "Bash(cp appicononline.png ic_launcher_round.png)"
     ]
   }
 }

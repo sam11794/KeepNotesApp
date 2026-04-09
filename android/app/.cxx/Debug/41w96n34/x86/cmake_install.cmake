@@ -45,8 +45,10 @@ endif()
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
   include("C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/Debug/41w96n34/x86/rnasyncstorage_autolinked_build/cmake_install.cmake")
+  include("C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/Debug/41w96n34/x86/RNGoogleSignInCGen_autolinked_build/cmake_install.cmake")
   include("C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/Debug/41w96n34/x86/RNGetRandomValuesSpec_autolinked_build/cmake_install.cmake")
   include("C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/Debug/41w96n34/x86/safeareacontext_autolinked_build/cmake_install.cmake")
+  include("C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/Debug/41w96n34/x86/RNVectorIconsSpec_autolinked_build/cmake_install.cmake")
 
 endif()
 

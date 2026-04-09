@@ -249,7 +249,8 @@ const SettingsScreen: React.FC = () => {
           <>
             {/* Sign In Button - Shown when not signed in */}
             <TouchableOpacity style={styles.signInButton} onPress={handleSignIn} disabled={isLoading}>
-              <Text style={styles.signInButtonText}>🔐 Sign In with Google</Text>
+              <Text style={styles.signInIcon}>🔐</Text>
+              <Text style={styles.signInButtonText}>Sign In with Google</Text>
             </TouchableOpacity>
             <View style={styles.profileDivider} />
           </>
@@ -260,7 +261,9 @@ const SettingsScreen: React.FC = () => {
 
         {/* Backup Button */}
         <TouchableOpacity style={styles.button} onPress={openBackupModal}>
-          <Text style={styles.buttonIcon}>☁️</Text>
+          <View style={styles.buttonIconContainer}>
+            <Text style={styles.buttonIcon}>☁️</Text>
+          </View>
           <View style={styles.buttonTextContainer}>
             <Text style={styles.buttonTitle}>Backup to Drive</Text>
             <Text style={styles.buttonDescription}>
@@ -271,7 +274,9 @@ const SettingsScreen: React.FC = () => {
 
         {/* Restore Button */}
         <TouchableOpacity style={styles.button} onPress={openRestoreModal}>
-          <Text style={styles.buttonIcon}>📥</Text>
+          <View style={styles.buttonIconContainer}>
+            <Text style={styles.buttonIcon}>📥</Text>
+          </View>
           <View style={styles.buttonTextContainer}>
             <Text style={styles.buttonTitle}>Restore from Drive</Text>
             <Text style={styles.buttonDescription}>
@@ -283,7 +288,8 @@ const SettingsScreen: React.FC = () => {
         {/* Conditional: Show Logout button only when signed in */}
         {signedIn && (
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutButtonText}>🚪 Sign Out</Text>
+            <Text style={styles.logoutIcon}>🚪</Text>
+            <Text style={styles.logoutButtonText}>Sign Out</Text>
           </TouchableOpacity>
         )}
 
@@ -407,12 +413,13 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: 'Roboto-Bold',
     color: '#333',
     marginBottom: 4,
   },
   userEmail: {
     fontSize: 14,
+    fontFamily: 'Roboto-Regular',
     color: '#666',
   },
   profileDivider: {
@@ -422,12 +429,13 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: 'Roboto-Bold',
     color: '#333',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
+    fontFamily: 'Roboto-Regular',
     color: '#666',
     marginBottom: 30,
   },
@@ -444,48 +452,71 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     alignItems: 'center',
   },
-  buttonIcon: {
-    fontSize: 28,
+  buttonIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#fff3e0',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 16,
+  },
+  buttonIcon: {
+    fontSize: 20,
+  },
+  signInIcon: {
+    fontSize: 20,
+    marginRight: 8,
+  },
+  logoutIcon: {
+    fontSize: 18,
+    marginRight: 8,
   },
   buttonTextContainer: {
     flex: 1,
   },
   buttonTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-Medium',
     color: '#333',
     marginBottom: 4,
   },
   buttonDescription: {
     fontSize: 13,
+    fontFamily: 'Roboto-Regular',
     color: '#666',
   },
   signInButton: {
+    flexDirection: 'row',
     backgroundColor: '#4285f4',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
   },
   signInButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-Medium',
     color: '#fff',
+    marginLeft: 10,
   },
   logoutButton: {
+    flexDirection: 'row',
     backgroundColor: '#fff',
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#e74c3c',
   },
   logoutButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-Medium',
     color: '#e74c3c',
+    marginLeft: 10,
   },
   infoSection: {
     marginTop: 10,
@@ -495,12 +526,13 @@ const styles = StyleSheet.create({
   },
   infoTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Roboto-Medium',
     color: '#333',
     marginBottom: 12,
   },
   infoText: {
     fontSize: 13,
+    fontFamily: 'Roboto-Regular',
     color: '#666',
     marginBottom: 8,
     lineHeight: 18,
@@ -519,12 +551,13 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: 'Roboto-Bold',
     color: '#333',
     marginBottom: 8,
   },
   modalSubtitle: {
     fontSize: 14,
+    fontFamily: 'Roboto-Regular',
     color: '#666',
     marginBottom: 20,
   },
@@ -534,6 +567,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
+    fontFamily: 'Roboto-Regular',
     marginBottom: 16,
   },
   modalButtons: {
@@ -551,6 +585,7 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: '#666',
     fontWeight: '600',
+    fontFamily: 'Roboto-Medium',
   },
   confirmButton: {
     backgroundColor: '#4285f4',
@@ -561,6 +596,7 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     color: '#fff',
     fontWeight: '600',
+    fontFamily: 'Roboto-Medium',
   },
   disabledButton: {
     opacity: 0.6,

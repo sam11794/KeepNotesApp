@@ -1,0 +1,1 @@
+C:\SB\React-Native-Claude-Ollama\KeepNotesApp\android\app\build\intermediates\cxx\RelWithDebInfo\50304k5m\obj\x86_64

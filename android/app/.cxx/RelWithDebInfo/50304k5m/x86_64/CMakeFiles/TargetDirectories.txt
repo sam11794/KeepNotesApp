@@ -1,0 +1,15 @@
+C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/x86_64/CMakeFiles/appmodules.dir
+C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/x86_64/CMakeFiles/edit_cache.dir
+C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/x86_64/CMakeFiles/rebuild_cache.dir
+C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/x86_64/rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir
+C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/x86_64/rnasyncstorage_autolinked_build/CMakeFiles/edit_cache.dir
+C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/x86_64/rnasyncstorage_autolinked_build/CMakeFiles/rebuild_cache.dir
+C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/x86_64/RNGoogleSignInCGen_autolinked_build/CMakeFiles/react_codegen_RNGoogleSignInCGen.dir
+C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/x86_64/RNGoogleSignInCGen_autolinked_build/CMakeFiles/edit_cache.dir
+C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/x86_64/RNGoogleSignInCGen_autolinked_build/CMakeFiles/rebuild_cache.dir
+C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/x86_64/RNGetRandomValuesSpec_autolinked_build/CMakeFiles/react_codegen_RNGetRandomValuesSpec.dir
+C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/x86_64/RNGetRandomValuesSpec_autolinked_build/CMakeFiles/edit_cache.dir
+C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/x86_64/RNGetRandomValuesSpec_autolinked_build/CMakeFiles/rebuild_cache.dir
+C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/x86_64/safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir
+C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/x86_64/safeareacontext_autolinked_build/CMakeFiles/edit_cache.dir
+C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/x86_64/safeareacontext_autolinked_build/CMakeFiles/rebuild_cache.dir

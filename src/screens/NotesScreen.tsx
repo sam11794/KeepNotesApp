@@ -11,6 +11,7 @@ import {
   SafeAreaView,
   Modal,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/FontAwesome5';
 import {initDB, fetchNotes, addNote, updateNote, deleteNote, Note} from '../db/database';
 
 // Get screen width for 2-column grid layout
@@ -143,14 +144,14 @@ const NotesScreen: React.FC<NotesScreenProps> = ({onOpenDrawer}) => {
       {/* Action buttons row */}
       <View style={styles.cardActions}>
         <TouchableOpacity
-          style={styles.editButton}
+          style={styles.iconButton}
           onPress={() => handleEditNote(item)}>
-          <Text style={styles.editButtonText}>Edit</Text>
+          <Icon name="pen" size={14} color="#f0a500" solid />
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.deleteButton}
+          style={styles.iconButton}
           onPress={() => handleDeleteNote(item)}>
-          <Text style={styles.deleteButtonText}>Delete</Text>
+          <Icon name="trash-alt" size={14} color="#e74c3c" solid />
         </TouchableOpacity>
       </View>
     </View>
@@ -172,7 +173,7 @@ const NotesScreen: React.FC<NotesScreenProps> = ({onOpenDrawer}) => {
       {/* Header with hamburger menu */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.menuButton} onPress={onOpenDrawer}>
-          <Text style={styles.menuIcon}>☰</Text>
+          <Icon name="bars" size={22} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notes</Text>
       </View>
@@ -192,7 +193,7 @@ const NotesScreen: React.FC<NotesScreenProps> = ({onOpenDrawer}) => {
 
       {/* Floating Add Button */}
       <TouchableOpacity style={styles.fab} onPress={handleAddNewNote}>
-        <Text style={styles.fabIcon}>+</Text>
+        <Icon name="plus" size={24} color="#fff" solid />
       </TouchableOpacity>
 
       {/* Edit/Add Note Modal */}
@@ -267,12 +268,12 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   menuIcon: {
-    fontSize: 24,
+    fontSize: 22,
     color: '#333',
   },
   headerTitle: {
     fontSize: 22,
-    fontWeight: 'bold',
+    fontFamily: 'Roboto-Bold',
     marginLeft: 16,
     color: '#333',
   },
@@ -300,18 +301,20 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Roboto-Medium',
     color: '#333',
     marginBottom: 6,
   },
   cardContent: {
     fontSize: 13,
+    fontFamily: 'Roboto-Regular',
     color: '#555',
     lineHeight: 18,
     marginBottom: 8,
   },
   cardDate: {
     fontSize: 11,
+    fontFamily: 'Roboto-Regular',
     color: '#999',
     marginBottom: 10,
   },
@@ -322,23 +325,15 @@ const styles = StyleSheet.create({
     borderTopColor: '#eee',
     paddingTop: 8,
   },
-  editButton: {
+  iconButton: {
     paddingVertical: 4,
     paddingHorizontal: 8,
   },
-  editButtonText: {
-    color: '#f0a500',
-    fontWeight: '600',
-    fontSize: 13,
+  editIcon: {
+    fontSize: 14,
   },
-  deleteButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-  deleteButtonText: {
-    color: '#e74c3c',
-    fontWeight: '600',
-    fontSize: 13,
+  deleteIcon: {
+    fontSize: 14,
   },
   // Floating Action Button
   fab: {
@@ -357,16 +352,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
   },
-  fabIcon: {
-    fontSize: 30,
-    color: '#fff',
-    lineHeight: 32,
-  },
   emptyText: {
     textAlign: 'center',
     color: '#999',
     marginTop: 40,
     fontSize: 16,
+    fontFamily: 'Roboto-Regular',
   },
   // Modal styles for add/edit
   modalOverlay: {
@@ -383,7 +374,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: 'Roboto-Bold',
     marginBottom: 16,
     color: '#333',
   },
@@ -393,6 +384,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
+    fontFamily: 'Roboto-Regular',
     marginBottom: 12,
   },
   inputContent: {
@@ -401,6 +393,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 14,
+    fontFamily: 'Roboto-Regular',
     minHeight: 100,
     textAlignVertical: 'top',
     marginBottom: 16,
@@ -420,6 +413,7 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: '#666',
     fontWeight: '600',
+    fontFamily: 'Roboto-Medium',
   },
   saveButton: {
     backgroundColor: '#f0a500',
@@ -430,6 +424,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#fff',
     fontWeight: '600',
+    fontFamily: 'Roboto-Medium',
   },
 });
 

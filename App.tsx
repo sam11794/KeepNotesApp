@@ -8,6 +8,7 @@ import {
   StatusBar,
   Modal,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/FontAwesome5';
 import NotesScreen from './src/screens/NotesScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 
@@ -57,6 +58,9 @@ const App: React.FC = () => {
           />
           {/* Drawer content */}
           <View style={styles.drawerContent}>
+            <View style={styles.drawerLogoContainer}>
+              <Icon name="sticky-note" size={32} color="#f0a500" solid />
+            </View>
             <Text style={styles.drawerTitle}>Menu</Text>
             <TouchableOpacity
               style={[
@@ -64,7 +68,12 @@ const App: React.FC = () => {
                 activeScreen === 'notes' && styles.drawerItemActive,
               ]}
               onPress={() => navigateTo('notes')}>
-              <Text style={styles.drawerIcon}>📝</Text>
+              <Icon
+                name="clipboard"
+                size={18}
+                color={activeScreen === 'notes' ? '#f0a500' : '#666'}
+                solid
+              />
               <Text
                 style={[
                   styles.drawerText,
@@ -79,7 +88,12 @@ const App: React.FC = () => {
                 activeScreen === 'settings' && styles.drawerItemActive,
               ]}
               onPress={() => navigateTo('settings')}>
-              <Text style={styles.drawerIcon}>⚙️</Text>
+              <Icon
+                name="cog"
+                size={18}
+                color={activeScreen === 'settings' ? '#f0a500' : '#666'}
+                solid
+              />
               <Text
                 style={[
                   styles.drawerText,
@@ -97,7 +111,12 @@ const App: React.FC = () => {
         <TouchableOpacity
           style={styles.navItem}
           onPress={() => setActiveScreen('notes')}>
-          <Text style={styles.navIcon}>📝</Text>
+          <Icon
+            name="clipboard"
+            size={22}
+            color={activeScreen === 'notes' ? '#f0a500' : '#999'}
+            solid
+          />
           <Text
             style={[
               styles.navText,
@@ -109,7 +128,12 @@ const App: React.FC = () => {
         <TouchableOpacity
           style={styles.navItem}
           onPress={() => setActiveScreen('settings')}>
-          <Text style={styles.navIcon}>⚙️</Text>
+          <Icon
+            name="cog"
+            size={22}
+            color={activeScreen === 'settings' ? '#f0a500' : '#999'}
+            solid
+          />
           <Text
             style={[
               styles.navText,
@@ -143,9 +167,14 @@ const styles = StyleSheet.create({
     paddingTop: 40,
     paddingHorizontal: 20,
   },
+  drawerLogoContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
   drawerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
+    fontFamily: 'Roboto-Bold',
     color: '#333',
     marginBottom: 30,
   },
@@ -160,13 +189,11 @@ const styles = StyleSheet.create({
   drawerItemActive: {
     backgroundColor: '#fff3e0',
   },
-  drawerIcon: {
-    fontSize: 20,
-    marginRight: 16,
-  },
   drawerText: {
     fontSize: 16,
+    fontFamily: 'Roboto-Regular',
     color: '#333',
+    marginLeft: 16,
   },
   drawerTextActive: {
     color: '#f0a500',
@@ -186,13 +213,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
   },
-  navIcon: {
-    fontSize: 22,
-    marginBottom: 4,
-  },
   navText: {
     fontSize: 12,
+    fontFamily: 'Roboto-Regular',
     color: '#999',
+    marginTop: 4,
   },
   navTextActive: {
     color: '#f0a500',

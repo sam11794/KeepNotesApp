@@ -1,8 +1,10 @@
 {
   "buildFiles": [
     "C:\\SB\\React-Native-Claude-Ollama\\KeepNotesApp\\node_modules\\@react-native-async-storage\\async-storage\\android\\build\\generated\\source\\codegen\\jni\\CMakeLists.txt",
+    "C:\\SB\\React-Native-Claude-Ollama\\KeepNotesApp\\node_modules\\@react-native-google-signin\\google-signin\\android\\build\\generated\\source\\codegen\\jni\\CMakeLists.txt",
     "C:\\SB\\React-Native-Claude-Ollama\\KeepNotesApp\\node_modules\\react-native-get-random-values\\android\\build\\generated\\source\\codegen\\jni\\CMakeLists.txt",
     "C:\\SB\\React-Native-Claude-Ollama\\KeepNotesApp\\node_modules\\react-native-safe-area-context\\android\\src\\main\\jni\\CMakeLists.txt",
+    "C:\\SB\\React-Native-Claude-Ollama\\KeepNotesApp\\node_modules\\react-native-vector-icons\\android\\build\\generated\\source\\codegen\\jni\\CMakeLists.txt",
     "C:\\SB\\React-Native-Claude-Ollama\\KeepNotesApp\\node_modules\\react-native\\ReactAndroid\\cmake-utils\\default-app-setup\\CMakeLists.txt"
   ],
   "cleanCommandsComponents": [
@@ -20,6 +22,11 @@
     "{LIST_OF_TARGETS_TO_BUILD}"
   ],
   "libraries": {
+    "react_codegen_RNVectorIconsSpec::@479809fae146501fd34d": {
+      "artifactName": "react_codegen_RNVectorIconsSpec",
+      "abi": "x86",
+      "runtimeFiles": []
+    },
     "react_codegen_safeareacontext::@7984cd80db47aa7b952a": {
       "artifactName": "react_codegen_safeareacontext",
       "abi": "x86",
@@ -43,6 +50,11 @@
     },
     "react_codegen_RNGetRandomValuesSpec::@6e1160200c59ddcfca1e": {
       "artifactName": "react_codegen_RNGetRandomValuesSpec",
+      "abi": "x86",
+      "runtimeFiles": []
+    },
+    "react_codegen_RNGoogleSignInCGen::@337b7b353bd94a4215c0": {
+      "artifactName": "react_codegen_RNGoogleSignInCGen",
       "abi": "x86",
       "runtimeFiles": []
     },

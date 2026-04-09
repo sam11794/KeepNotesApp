@@ -10,6 +10,7 @@ import {
   Image,
   ScrollView,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   backupToGoogleDrive,
   restoreFromGoogleDrive,
@@ -28,9 +29,17 @@ const SettingsScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [signedIn, setSignedIn] = useState(false);
+  const [lastBackup, setLastBackup] = useState<string | null>(null);
+  const [lastRestore, setLastRestore] = useState<string | null>(null);
 
   useEffect(() => {
-    loadUserProfile();
+    console.log('[Settings] useEffect: Mounting...');
+    try {
+      loadUserProfile();
+      loadTimestamps();
+    } catch (error: any) {
+      console.log('[Settings] useEffect: ERROR:', error.message, error.stack);
+    }
   }, []);
 
   const loadUserProfile = async () => {
@@ -56,11 +65,30 @@ const SettingsScreen: React.FC = () => {
     }
   };
 
+  const loadTimestamps = async () => {
+    try {
+      console.log('[Settings] loadTimestamps: Starting...');
+      const backupTime = await AsyncStorage.getItem('last_backup_time');
+      console.log('[Settings] loadTimestamps: backupTime =', backupTime);
+      const restoreTime = await AsyncStorage.getItem('last_restore_time');
+      console.log('[Settings] loadTimestamps: restoreTime =', restoreTime);
+      setLastBackup(backupTime);
+      setLastRestore(restoreTime);
+      console.log('[Settings] loadTimestamps: Done');
+    } catch (error: any) {
+      console.log('[Settings] loadTimestamps: ERROR:', error.message, error.stack);
+    }
+  };
+
   const handleSignIn = async () => {
     try {
+      console.log('[Settings] handleSignIn: Starting...');
       setIsLoading(true);
+      console.log('[Settings] handleSignIn: Calling GoogleSignin.signIn()...');
       await GoogleSignin.signIn();
+      console.log('[Settings] handleSignIn: Sign in successful, getting current user...');
       const currentUser = await GoogleSignin.getCurrentUser();
+      console.log('[Settings] handleSignIn: currentUser =', JSON.stringify(currentUser));
       if (currentUser?.user) {
         const profile: UserProfile = {
           name: currentUser.user.name || 'Guest User',
@@ -72,7 +100,12 @@ const SettingsScreen: React.FC = () => {
         setSignedIn(true);
       }
     } catch (error: any) {
-      Alert.alert('Sign In Failed', error.message || 'Unknown error');
+      console.log('[Settings] handleSignIn: ERROR =', JSON.stringify(error));
+      console.log('[Settings] handleSignIn: ERROR message =', error.message);
+      console.log('[Settings] handleSignIn: ERROR code =', error.code);
+      setTimeout(() => {
+        Alert.alert('Sign In Failed', error.message || 'Unknown error');
+      }, 100);
     } finally {
       setIsLoading(false);
     }
@@ -86,6 +119,8 @@ const SettingsScreen: React.FC = () => {
     setIsLoading(true);
     try {
       await backupToGoogleDrive();
+      await AsyncStorage.setItem('last_backup_time', new Date().toISOString());
+      setLastBackup(new Date().toISOString());
       Alert.alert('Success', 'Notes backed up to Google Drive successfully!');
       setIsBackupModalVisible(false);
     } catch (error: any) {
@@ -157,6 +192,8 @@ const SettingsScreen: React.FC = () => {
       for (const note of restoredNotes) {
         await addNoteDirect(note.title, note.content, note.created_at);
       }
+      await AsyncStorage.setItem('last_restore_time', new Date().toISOString());
+      setLastRestore(new Date().toISOString());
       Alert.alert('Success', 'Notes merged successfully!');
     } catch (error: any) {
       Alert.alert('Merge Failed', error.message);
@@ -189,6 +226,8 @@ const SettingsScreen: React.FC = () => {
         await addNoteDirect(note.title, note.content, note.created_at);
       }
 
+      await AsyncStorage.setItem('last_restore_time', new Date().toISOString());
+      setLastRestore(new Date().toISOString());
       Alert.alert('Success', 'Notes restored successfully!');
     } catch (error: any) {
       Alert.alert('Restore Failed', error.message);
@@ -240,38 +279,61 @@ const SettingsScreen: React.FC = () => {
               <Text style={styles.profileEmail}>{userProfile?.email || 'Not signed in'}</Text>
             </View>
           ) : (
-            <TouchableOpacity
-              style={styles.signInButton}
-              onPress={handleSignIn}
-              disabled={isLoading}>
-              <Icon name="google" size={20} color="#fff" solid />
-              <Text style={styles.signInButtonText}>Sign In with Google</Text>
-            </TouchableOpacity>
+            <>
+              <View style={{alignItems: 'center', marginTop: 40}}>
+                <Image
+                  source={require('../../assets/logo.png')}
+                  style={{width: 80, height: 80, marginBottom: 20}}
+                  resizeMode="contain"
+                />
+              </View>
+              <TouchableOpacity
+                style={styles.signInButton}
+                onPress={handleSignIn}
+                disabled={isLoading}>
+                <Icon name="google" size={20} color="#fff" solid />
+                <Text style={styles.signInButtonText}>Sign In with Google</Text>
+              </TouchableOpacity>
+            </>
           )}
         </View>
 
-        {/* Quick Actions */}
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        {/* Quick Actions - Only show when signed in */}
+        {signedIn && (
+          <>
+            <Text style={styles.sectionTitle}>Quick Actions</Text>
 
-        <TouchableOpacity style={styles.actionCard} onPress={openBackupModal}>
-          <View style={styles.actionIconContainer}>
-            <Icon name="cloud-upload-alt" size={20} color="#4285F4" solid />
-          </View>
-          <View style={styles.actionTextContainer}>
-            <Text style={styles.actionTitle}>Backup to Drive</Text>
-            <Text style={styles.actionSubtitle}>Save encrypted notes to Google Drive</Text>
-          </View>
-        </TouchableOpacity>
+            <TouchableOpacity style={styles.actionCard} onPress={openBackupModal}>
+              <View style={styles.actionIconContainer}>
+                <Icon name="cloud-upload-alt" size={20} color="#4285F4" solid />
+              </View>
+              <View style={styles.actionTextContainer}>
+                <Text style={styles.actionTitle}>Backup to Drive</Text>
+                <Text style={styles.actionSubtitle}>Save encrypted notes to Google Drive</Text>
+              </View>
+            </TouchableOpacity>
+            {lastBackup && (
+              <Text style={styles.timestampText}>
+                Last backup: {new Date(lastBackup).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </Text>
+            )}
 
-        <TouchableOpacity style={styles.actionCard} onPress={openRestoreModal}>
-          <View style={[styles.actionIconContainer, {backgroundColor: '#e8f5e9'}]}>
-            <Icon name="cloud-download-alt" size={20} color="#34A853" solid />
-          </View>
-          <View style={styles.actionTextContainer}>
-            <Text style={styles.actionTitle}>Restore from Drive</Text>
-            <Text style={styles.actionSubtitle}>Restore notes from Google Drive backup</Text>
-          </View>
-        </TouchableOpacity>
+            <TouchableOpacity style={styles.actionCard} onPress={openRestoreModal}>
+              <View style={[styles.actionIconContainer, {backgroundColor: '#e8f5e9'}]}>
+                <Icon name="cloud-download-alt" size={20} color="#34A853" solid />
+              </View>
+              <View style={styles.actionTextContainer}>
+                <Text style={styles.actionTitle}>Restore from Drive</Text>
+                <Text style={styles.actionSubtitle}>Restore notes from Google Drive backup</Text>
+              </View>
+            </TouchableOpacity>
+            {lastRestore && (
+              <Text style={styles.timestampText}>
+                Last restore: {new Date(lastRestore).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </Text>
+            )}
+          </>
+        )}
 
         {/* Account Section */}
         {signedIn && (
@@ -461,6 +523,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Roboto-Regular',
     color: '#777',
+  },
+  timestampText: {
+    fontSize: 12,
+    color: '#777',
+    marginTop: 6,
+    marginLeft: 8,
+    marginBottom: 12,
   },
   logoutButton: {
     flexDirection: 'row',

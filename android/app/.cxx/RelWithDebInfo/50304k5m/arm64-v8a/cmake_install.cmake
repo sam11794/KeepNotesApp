@@ -48,6 +48,7 @@ if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   include("C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/arm64-v8a/RNGoogleSignInCGen_autolinked_build/cmake_install.cmake")
   include("C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/arm64-v8a/RNGetRandomValuesSpec_autolinked_build/cmake_install.cmake")
   include("C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/arm64-v8a/safeareacontext_autolinked_build/cmake_install.cmake")
+  include("C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/arm64-v8a/RNVectorIconsSpec_autolinked_build/cmake_install.cmake")
 
 endif()
 

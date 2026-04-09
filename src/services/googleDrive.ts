@@ -66,8 +66,11 @@ export const signInWithGoogle = async (): Promise<GoogleSignInResult> => {
       email: (userInfo as any).user?.email || '',
     };
   } catch (error: any) {
-    console.log('[GoogleDrive] signInWithGoogle: ERROR:', error.message);
+    console.log('[GoogleDrive] signInWithGoogle: ERROR:', JSON.stringify(error));
+    console.log('[GoogleDrive] signInWithGoogle: ERROR message:', error.message);
     console.log('[GoogleDrive] signInWithGoogle: ERROR code:', error.code);
+    console.log('[GoogleDrive] signInWithGoogle: ERROR stack:', error.stack);
+    console.log('[GoogleDrive] signInWithGoogle: ERROR toString:', error.toString());
 
     // Provide more helpful error messages
     if (error.code === -1 || error.code === 'NETWORK_ERROR' || error.message?.includes('NETWORK_ERROR')) {

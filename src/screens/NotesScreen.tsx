@@ -141,7 +141,13 @@ const NotesScreen: React.FC<NotesScreenProps> = ({onOpenDrawer}) => {
       <Text style={styles.cardTitle}>{item.title || 'Untitled'}</Text>
       <Text style={styles.cardContent} numberOfLines={4}>{item.content}</Text>
       <Text style={styles.cardDate}>
-        {new Date(item.created_at * 1000).toLocaleDateString()}
+        {new Date(item.created_at * 1000).toLocaleString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })}
       </Text>
       {/* Action buttons row */}
       <View style={styles.cardActions}>

@@ -1,13 +1,14 @@
 # ninja log v5
-1	22	0	C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/x86_64/CMakeFiles/cmake.verify_globs	eba58bfdf3afdb08
+1	21	0	C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/x86_64/CMakeFiles/cmake.verify_globs	eba58bfdf3afdb08
 49	4878	7973531530140110	rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/react/renderer/components/rnasyncstorage/States.cpp.o	4385b55f155b6f71
 100	4421	7973531525408878	RNGoogleSignInCGen_autolinked_build/CMakeFiles/react_codegen_RNGoogleSignInCGen.dir/react/renderer/components/RNGoogleSignInCGen/States.cpp.o	54c27079edd2b824
 74	5565	7973531537037287	RNGoogleSignInCGen_autolinked_build/CMakeFiles/react_codegen_RNGoogleSignInCGen.dir/react/renderer/components/RNGoogleSignInCGen/EventEmitters.cpp.o	f952c69cab19c765
+28	1102	7974366778733346	build.ninja	6b82c9d41fdf48cd
 61	5490	7973531536169801	rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/react/renderer/components/rnasyncstorage/EventEmitters.cpp.o	3bdc5c3a618062ac
 67	6831	7973531549466176	rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/rnasyncstorage-generated.cpp.o	30bee4ce5e2beb8
 87	6583	7973531546825626	RNGoogleSignInCGen_autolinked_build/CMakeFiles/react_codegen_RNGoogleSignInCGen.dir/RNGoogleSignInCGen-generated.cpp.o	78e5ab0122503c9
-37	7714	7973531558221121	rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/react/renderer/components/rnasyncstorage/ComponentDescriptors.cpp.o	9800ab83a106b4b2
 15926	16124	7973531642943235	C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/build/intermediates/cxx/RelWithDebInfo/50304k5m/obj/x86_64/libreact_codegen_safeareacontext.so	d15935f682736dc6
+37	7714	7973531558221121	rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/react/renderer/components/rnasyncstorage/ComponentDescriptors.cpp.o	9800ab83a106b4b2
 43	7113	7973531552336764	rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/react/renderer/components/rnasyncstorage/Props.cpp.o	9a7f24ecc657fdb8
 106	6922	7973531550544929	RNGoogleSignInCGen_autolinked_build/CMakeFiles/react_codegen_RNGoogleSignInCGen.dir/react/renderer/components/RNGoogleSignInCGen/ShadowNodes.cpp.o	679841ba4c8d0c17
 55	7296	7973531554410496	rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/react/renderer/components/rnasyncstorage/ShadowNodes.cpp.o	7b8ae2ee4844c695
@@ -29,8 +30,8 @@
 7114	15020	7973531631747156	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/9a8b7cc08674d1c4959b79cfbec45887/components/safeareacontext/Props.cpp.o	9acf704d52ca750f
 7126	15356	7973531635190497	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/8e3890b592132c13a0dfe65e26149719/RNCSafeAreaViewShadowNode.cpp.o	a472a9c68aa4a5ea
 10603	15926	7973531640868417	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/5f0b85b4534d57bd4b5f8e5d6a69c232/safeareacontext/ShadowNodes.cpp.o	2d2384000b92fd50
-1	18	0	clean	d47e71c03395a7e2
+0	18	0	clean	d47e71c03395a7e2
 16125	16216	7973531643845107	C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/build/intermediates/cxx/RelWithDebInfo/50304k5m/obj/x86_64/libappmodules.so	b072cec6cf6f9784
-22	669	7974209145871983	build.ninja	6b82c9d41fdf48cd
-1	18	0	C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/x86_64/CMakeFiles/cmake.verify_globs	eba58bfdf3afdb08
-0	6	0	clean	d47e71c03395a7e2
+22	606	7974366778733346	build.ninja	6b82c9d41fdf48cd
+1	17	0	C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/x86_64/CMakeFiles/cmake.verify_globs	eba58bfdf3afdb08
+1	8	0	clean	d47e71c03395a7e2

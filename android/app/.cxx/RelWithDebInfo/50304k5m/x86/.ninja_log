@@ -1,8 +1,9 @@
 # ninja log v5
-1	29	0	C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/x86/CMakeFiles/cmake.verify_globs	b6900ed1161e22e8
+1	22	0	C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/x86/CMakeFiles/cmake.verify_globs	b6900ed1161e22e8
 7327	12698	7973531400622122	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/9a8b7cc08674d1c4959b79cfbec45887/components/safeareacontext/EventEmitters.cpp.o	717522660425865f
 96	5560	7973531326791691	RNGoogleSignInCGen_autolinked_build/CMakeFiles/react_codegen_RNGoogleSignInCGen.dir/react/renderer/components/RNGoogleSignInCGen/States.cpp.o	9fa726381104830b
 75	5999	7973531333900103	RNGoogleSignInCGen_autolinked_build/CMakeFiles/react_codegen_RNGoogleSignInCGen.dir/react/renderer/components/RNGoogleSignInCGen/EventEmitters.cpp.o	69e7692c6cdf9ca1
+31	1167	7974366771163342	build.ninja	962844462274cf3e
 36	5418	7973531327040305	rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/react/renderer/components/rnasyncstorage/EventEmitters.cpp.o	3d35b3531465b724
 18092	18444	7973531458606058	C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/build/intermediates/cxx/RelWithDebInfo/50304k5m/obj/x86/libreact_codegen_safeareacontext.so	5db4716ae36bdb36
 53	5530	7973531327060384	rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/react/renderer/components/rnasyncstorage/States.cpp.o	cffb9c19a4c0a3d1
@@ -30,7 +31,7 @@
 11758	17451	7973531448589972	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/9a8b7cc08674d1c4959b79cfbec45887/components/safeareacontext/ShadowNodes.cpp.o	9751ca0643d0a181
 7895	18092	7973531455003822	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/8e3890b592132c13a0dfe65e26149719/RNCSafeAreaViewShadowNode.cpp.o	b89808316946d8d8
 18444	18549	7973531459618164	C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/build/intermediates/cxx/RelWithDebInfo/50304k5m/obj/x86/libappmodules.so	28e99363639d4465
-0	17	0	clean	d47e71c03395a7e2
-29	699	7974209137971326	build.ninja	962844462274cf3e
-1	19	0	C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/x86/CMakeFiles/cmake.verify_globs	b6900ed1161e22e8
-0	8	0	clean	d47e71c03395a7e2
+0	10	0	clean	d47e71c03395a7e2
+23	645	7974366771163342	build.ninja	962844462274cf3e
+1	17	0	C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/x86/CMakeFiles/cmake.verify_globs	b6900ed1161e22e8
+1	7	0	clean	d47e71c03395a7e2

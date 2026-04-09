@@ -13,3 +13,6 @@ C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50
 C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/armeabi-v7a/safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir
 C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/armeabi-v7a/safeareacontext_autolinked_build/CMakeFiles/edit_cache.dir
 C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/armeabi-v7a/safeareacontext_autolinked_build/CMakeFiles/rebuild_cache.dir
+C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/armeabi-v7a/RNVectorIconsSpec_autolinked_build/CMakeFiles/react_codegen_RNVectorIconsSpec.dir
+C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/armeabi-v7a/RNVectorIconsSpec_autolinked_build/CMakeFiles/edit_cache.dir
+C:/SB/React-Native-Claude-Ollama/KeepNotesApp/android/app/.cxx/RelWithDebInfo/50304k5m/armeabi-v7a/RNVectorIconsSpec_autolinked_build/CMakeFiles/rebuild_cache.dir

@@ -34,8 +34,37 @@ export const FDListScreen: React.FC<FDListScreenProps> = ({onOpenDrawer, onBack,
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
   const [selectedSort, setSelectedSort] = useState<SortType>('maturity');
+  // NEW: dropdown filter state
+  const [selectedPerson, setSelectedPerson] = useState<string>('All');
+  const [selectedBank, setSelectedBank] = useState<string>('All');
+  const [showPersonDropdown, setShowPersonDropdown] = useState(false);
+  const [showBankDropdown, setShowBankDropdown] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const hasScrolled = useRef(false);
+
+  // NEW: derived unique persons and banks from fds
+  const uniquePersons = useMemo(() => {
+    const persons = [...new Set(fds.map(fd => fd.person_name))].sort();
+    return ['All', ...persons];
+  }, [fds]);
+
+  // NEW: dependent banks - only show banks for selected person
+  const availableBanks = useMemo(() => {
+    let banks: string[];
+    if (selectedPerson === 'All') {
+      banks = [...new Set(fds.map(fd => fd.bank_name))];
+    } else {
+      banks = [...new Set(fds.filter(fd => fd.person_name === selectedPerson).map(fd => fd.bank_name))];
+    }
+    return ['All', ...banks.sort()];
+  }, [fds, selectedPerson]);
+
+  // NEW: handle person change - reset bank when person changes
+  const handlePersonChange = (person: string) => {
+    setSelectedPerson(person);
+    setSelectedBank('All');
+    setShowPersonDropdown(false);
+  };
 
   useEffect(() => {
     loadFDs();
@@ -78,7 +107,17 @@ export const FDListScreen: React.FC<FDListScreenProps> = ({onOpenDrawer, onBack,
       );
     }
 
-    // Apply filter
+    // NEW: Apply person filter
+    if (selectedPerson !== 'All') {
+      result = result.filter(fd => fd.person_name === selectedPerson);
+    }
+
+    // NEW: Apply bank filter
+    if (selectedBank !== 'All') {
+      result = result.filter(fd => fd.bank_name === selectedBank);
+    }
+
+    // Apply status filter (Active / Matured)
     if (selectedFilter === 'active') {
       result = result.filter(fd => fd.maturity_date >= now);
     } else if (selectedFilter === 'matured') {
@@ -97,7 +136,7 @@ export const FDListScreen: React.FC<FDListScreenProps> = ({onOpenDrawer, onBack,
     });
 
     return result;
-  }, [fds, searchQuery, selectedFilter, selectedSort, now]);
+  }, [fds, searchQuery, selectedPerson, selectedBank, selectedFilter, selectedSort, now]);
 
   // NEW: filtered totals - calculated from final filtered+sorted data
   const filteredTotals = useMemo(() => {
@@ -239,6 +278,68 @@ export const FDListScreen: React.FC<FDListScreenProps> = ({onOpenDrawer, onBack,
         </View>
       </View>
 
+      {/* NEW: Dropdown Filters */}
+      <View style={styles.dropdownContainer}>
+        {/* Person Dropdown */}
+        <TouchableOpacity
+          style={styles.dropdown}
+          onPress={() => {
+            setShowPersonDropdown(!showPersonDropdown);
+            setShowBankDropdown(false);
+          }}>
+          <Icon name="user" size={14} color="#5F6368" />
+          <Text style={styles.dropdownText}>{selectedPerson}</Text>
+          <Icon name={showPersonDropdown ? 'chevron-up' : 'chevron-down'} size={12} color="#5F6368" />
+        </TouchableOpacity>
+
+        {/* Bank Dropdown */}
+        <TouchableOpacity
+          style={styles.dropdown}
+          onPress={() => {
+            setShowBankDropdown(!showBankDropdown);
+            setShowPersonDropdown(false);
+          }}>
+          <Icon name="university" size={14} color="#5F6368" />
+          <Text style={styles.dropdownText}>{selectedBank}</Text>
+          <Icon name={showBankDropdown ? 'chevron-up' : 'chevron-down'} size={12} color="#5F6368" />
+        </TouchableOpacity>
+      </View>
+
+      {/* NEW: Person Dropdown List */}
+      {showPersonDropdown && (
+        <View style={styles.dropdownList}>
+          {uniquePersons.map(person => (
+            <TouchableOpacity
+              key={person}
+              style={[styles.dropdownItem, selectedPerson === person && styles.dropdownItemSelected]}
+              onPress={() => handlePersonChange(person)}>
+              <Text style={[styles.dropdownItemText, selectedPerson === person && styles.dropdownItemTextSelected]}>
+                {person}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      {/* NEW: Bank Dropdown List */}
+      {showBankDropdown && (
+        <View style={styles.dropdownList}>
+          {availableBanks.map(bank => (
+            <TouchableOpacity
+              key={bank}
+              style={[styles.dropdownItem, selectedBank === bank && styles.dropdownItemSelected]}
+              onPress={() => {
+                setSelectedBank(bank);
+                setShowBankDropdown(false);
+              }}>
+              <Text style={[styles.dropdownItemText, selectedBank === bank && styles.dropdownItemTextSelected]}>
+                {bank}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
       {/* Filter & Sort Row */}
       <View style={styles.filterSortContainer}>
         <View style={styles.filterGroup}>
@@ -294,12 +395,12 @@ export const FDListScreen: React.FC<FDListScreenProps> = ({onOpenDrawer, onBack,
           filteredFDs.length > 0 ? (
             <View style={styles.totalsHeader}>
               <View style={styles.totalCard}>
-                <Icon name="wallet" size={16} color="#FBBC04" solid />
-                <Text style={styles.totalLabel}>Investment</Text>
+                <Icon name="wallet" size={20} color="#FBBC04" solid />
+                <Text style={styles.totalLabel}>Total Investment</Text>
                 <Text style={styles.totalValue}>{formatCurrency(filteredTotals.totalInvestment)}</Text>
               </View>
               <View style={styles.totalCard}>
-                <Icon name="piggy-bank" size={16} color="#34A853" solid />
+                <Icon name="piggy-bank" size={20} color="#34A853" solid />
                 <Text style={styles.totalLabel}>Maturity Value</Text>
                 <Text style={styles.totalValue}>{formatCurrency(filteredTotals.totalMaturity)}</Text>
               </View>
@@ -349,6 +450,60 @@ const styles = StyleSheet.create({
   searchContainer: {
     padding: 14,
     paddingBottom: 8,
+  },
+  // NEW: dropdown styles
+  dropdownContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 14,
+    paddingBottom: 8,
+    gap: 10,
+  },
+  dropdown: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#E8EAED',
+  },
+  dropdownText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: 'Roboto-Regular',
+    color: '#202124',
+  },
+  dropdownList: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginHorizontal: 14,
+    marginBottom: 8,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  dropdownItem: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F3F4',
+  },
+  dropdownItemSelected: {
+    backgroundColor: '#E8F0FE',
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    fontFamily: 'Roboto-Regular',
+    color: '#202124',
+  },
+  dropdownItemTextSelected: {
+    color: '#4285F4',
+    fontFamily: 'Roboto-Medium',
   },
   searchBar: {
     flexDirection: 'row',
@@ -435,50 +590,61 @@ const styles = StyleSheet.create({
     color: '#9AA0A6',
   },
   // NEW: filtered totals header styles
+  // FIX: stats layout - proper 2-column layout with equal width
   totalsHeader: {
     flexDirection: 'row',
-    gap: 10,
+    justifyContent: 'space-between',
     marginBottom: 14,
+    gap: 10,
   },
   totalCard: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 12,
-    gap: 8,
-  },
-  totalLabel: {
-    fontSize: 12,
-    fontFamily: 'Roboto-Regular',
-    color: '#5F6368',
-  },
-  totalValue: {
-    fontSize: 14,
-    fontFamily: 'Roboto-Bold',
-    color: '#202124',
-    flex: 1,
-    textAlign: 'right',
-  },
-  listContent: {
     padding: 14,
-    paddingTop: 6,
-    paddingBottom: 100,
-  },
-  fdCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 12,
+    alignItems: 'center',
     elevation: 1,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,
     shadowRadius: 2,
   },
+  totalLabel: {
+    fontSize: 11,
+    fontFamily: 'Roboto-Regular',
+    color: '#5F6368',
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  totalValue: {
+    fontSize: 15,
+    fontFamily: 'Roboto-Bold',
+    color: '#202124',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  listContent: {
+    padding: 14,
+    paddingTop: 6,
+    paddingBottom: 100,
+  },
+  // NEW: card background fix - white card with better shadow for contrast
+  fdCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+  },
+  // NEW: matured border styling - green for matured FDs
   fdCardMatured: {
-    opacity: 0.8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#4CAF50',  // Green for matured
   },
   // NEW: maturing soon styling
   fdCardMaturing: {
@@ -514,7 +680,8 @@ const styles = StyleSheet.create({
   fdRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: 6,
+    alignItems: 'center',
   },
   fdLabel: {
     fontSize: 13,

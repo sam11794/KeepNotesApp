@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useCallback} from 'react';
 import {
   View,
   Text,
@@ -9,23 +9,23 @@ import {
   Alert,
   Dimensions,
   SafeAreaView,
-  Modal,
-  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  BackHandler,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import {initDB, fetchNotes, addNote, updateNote, deleteNote, Note} from '../db/database';
 
 // Get screen dimensions for layout
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const SCREEN_HEIGHT = Dimensions.get('window').height;
-const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2;
 
 // Props interface for drawer navigation callback
 interface NotesScreenProps {
   onOpenDrawer: () => void;
+  onEditorVisibleChange: (visible: boolean) => void;
 }
 
-const NotesScreen: React.FC<NotesScreenProps> = ({onOpenDrawer}) => {
+const NotesScreen: React.FC<NotesScreenProps> = ({onOpenDrawer, onEditorVisibleChange}) => {
   // State for note input fields
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -35,16 +35,18 @@ const NotesScreen: React.FC<NotesScreenProps> = ({onOpenDrawer}) => {
   const [isLoading, setIsLoading] = useState(true);
   // State for edit mode - stores note being edited, null if adding new
   const [editingNote, setEditingNote] = useState<Note | null>(null);
-  // State for modal visibility (edit dialog)
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  // State for full-screen editor visibility
+  const [isFullScreenEditorVisible, setIsFullScreenEditorVisible] = useState(false);
+  // Undo/Redo state
+  const [history, setHistory] = useState<{title: string; content: string}[]>([]);
+  const [redoStack, setRedoStack] = useState<{title: string; content: string}[]>([]);
 
   // Load notes when component mounts
-  // fetchNotes() now returns DECRYPTED content automatically
   useEffect(() => {
     const setup = async () => {
       try {
         await initDB();
-        const notesList = await fetchNotes(); // Content is decrypted inside fetchNotes()
+        const notesList = await fetchNotes();
         setNotes(notesList);
       } catch (error) {
         Alert.alert('Error', 'Failed to initialize database');
@@ -55,14 +57,66 @@ const NotesScreen: React.FC<NotesScreenProps> = ({onOpenDrawer}) => {
     setup();
   }, []);
 
+  // System back button handling - auto-save when editor is open
+  useEffect(() => {
+    const backAction = () => {
+      if (isFullScreenEditorVisible) {
+        if (content.trim()) {
+          handleSaveNote();
+        } else {
+          handleCancelEdit();
+        }
+        return true;
+      }
+      return false;
+    };
+
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction
+    );
+
+    return () => subscription.remove();
+  }, [isFullScreenEditorVisible, title, content]);
+
+  // Notify parent when editor visibility changes
+  useEffect(() => {
+    onEditorVisibleChange(isFullScreenEditorVisible);
+  }, [isFullScreenEditorVisible, onEditorVisibleChange]);
+
+  // Push state to history when text changes
+  const pushToHistory = useCallback((newTitle: string, newContent: string) => {
+    setHistory(prev => [...prev.slice(-20), {title, content}]);
+    setRedoStack([]);
+  }, [title, content]);
+
+  // Undo handler
+  const handleUndo = () => {
+    if (history.length === 0) return;
+    const lastState = history[history.length - 1];
+    setRedoStack(prev => [...prev, {title, content}]);
+    setHistory(prev => prev.slice(0, -1));
+    setTitle(lastState.title);
+    setContent(lastState.content);
+  };
+
+  // Redo handler
+  const handleRedo = () => {
+    if (redoStack.length === 0) return;
+    const nextState = redoStack[redoStack.length - 1];
+    setHistory(prev => [...prev, {title, content}]);
+    setRedoStack(prev => prev.slice(0, -1));
+    setTitle(nextState.title);
+    setContent(nextState.content);
+  };
+
   // Reload notes from database
   const reloadNotes = async () => {
-    const notesList = await fetchNotes(); // Content is decrypted inside fetchNotes()
+    const notesList = await fetchNotes();
     setNotes(notesList);
   };
 
   // Handle adding or updating a note
-  // addNote() encrypts content automatically before saving
   const handleSaveNote = async () => {
     if (!content.trim()) {
       Alert.alert('Error', 'Note content is required');
@@ -71,29 +125,30 @@ const NotesScreen: React.FC<NotesScreenProps> = ({onOpenDrawer}) => {
 
     try {
       if (editingNote) {
-        // Update existing note - updateNote() encrypts before saving
         await updateNote(editingNote.id, title.trim(), content.trim());
       } else {
-        // Add new note - addNote() encrypts before saving
         await addNote(title.trim(), content.trim());
       }
-      // Clear inputs and reload
       setTitle('');
       setContent('');
+      setHistory([]);
+      setRedoStack([]);
       setEditingNote(null);
-      setIsModalVisible(false);
+      setIsFullScreenEditorVisible(false);
       await reloadNotes();
     } catch (error) {
       Alert.alert('Error', 'Failed to save note');
     }
   };
 
-  // Open edit modal with note data
+  // Open full-screen editor in edit mode
   const handleEditNote = (note: Note) => {
     setTitle(note.title);
-    setContent(note.content); // note.content is already decrypted from fetchNotes()
+    setContent(note.content);
+    setHistory([]);
+    setRedoStack([]);
     setEditingNote(note);
-    setIsModalVisible(true);
+    setIsFullScreenEditorVisible(true);
   };
 
   // Delete a note
@@ -123,43 +178,51 @@ const NotesScreen: React.FC<NotesScreenProps> = ({onOpenDrawer}) => {
   const handleCancelEdit = () => {
     setTitle('');
     setContent('');
+    setHistory([]);
+    setRedoStack([]);
     setEditingNote(null);
-    setIsModalVisible(false);
+    setIsFullScreenEditorVisible(false);
   };
 
-  // Open input for new note
+  // Open full-screen editor for new note
   const handleAddNewNote = () => {
     setTitle('');
     setContent('');
+    setHistory([]);
+    setRedoStack([]);
     setEditingNote(null);
-    setIsModalVisible(true);
+    setIsFullScreenEditorVisible(true);
   };
 
   // Render each note card
   const renderNoteCard = ({item}: {item: Note}) => (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>{item.title || 'Untitled'}</Text>
-      <Text style={styles.cardContent} numberOfLines={4}>{item.content}</Text>
-      <Text style={styles.cardDate}>
-        {new Date(item.created_at * 1000).toLocaleString('en-GB', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        })}
-      </Text>
-      {/* Action buttons row */}
-      <View style={styles.cardActions}>
+      <TouchableOpacity
+        style={styles.cardContent}
+        onPress={() => handleEditNote(item)}
+        activeOpacity={0.7}>
+        <Text style={styles.cardTitle} numberOfLines={2}>
+          {item.title || 'Untitled'}
+        </Text>
+        <Text style={styles.cardBody} numberOfLines={5}>
+          {item.content}
+        </Text>
+      </TouchableOpacity>
+      <View style={styles.cardFooter}>
+        <Text style={styles.cardDate}>
+          {new Date(item.created_at * 1000).toLocaleString('en-GB', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
+        </Text>
         <TouchableOpacity
           style={styles.iconButton}
-          onPress={() => handleEditNote(item)}>
-          <Icon name="pen" size={14} color="#f0a500" solid />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={() => handleDeleteNote(item)}>
-          <Icon name="trash-alt" size={14} color="#e74c3c" solid />
+          onPress={() => handleDeleteNote(item)}
+          hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
+          <Icon name="trash-alt" size={14} color="#34A853" solid />
         </TouchableOpacity>
       </View>
     </View>
@@ -170,18 +233,113 @@ const NotesScreen: React.FC<NotesScreenProps> = ({onOpenDrawer}) => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text>Loading...</Text>
+          <Text style={styles.loadingText}>Loading...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
+  // Full-screen editor view
+  if (isFullScreenEditorVisible) {
+    return (
+      <SafeAreaView style={styles.editorContainer} pointerEvents="box-none">
+        <KeyboardAvoidingView
+          style={styles.editorKeyboardView}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          pointerEvents="box-none">
+          {/* Editor Header */}
+          <View style={styles.editorHeader} pointerEvents="box-none">
+            {/* Left side */}
+            <TouchableOpacity
+              style={styles.editorBackButton}
+              onPress={handleSaveNote}
+              hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+              <Icon name="arrow-left" size={20} color="#5F6368" solid />
+            </TouchableOpacity>
+            {/* Right side */}
+            <View style={styles.editorRightActions}>
+              <TouchableOpacity
+                style={styles.editorActionButton}
+                onPress={handleUndo}
+                disabled={history.length === 0}
+                hitSlop={{top: 10, bottom: 10, left: 6, right: 6}}>
+                <Icon
+                  name="undo"
+                  size={18}
+                  color={history.length === 0 ? '#DADCE0' : '#5F6368'}
+                  solid
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.editorActionButton}
+                onPress={handleRedo}
+                disabled={redoStack.length === 0}
+                hitSlop={{top: 10, bottom: 10, left: 6, right: 6}}>
+                <Icon
+                  name="redo"
+                  size={18}
+                  color={redoStack.length === 0 ? '#DADCE0' : '#5F6368'}
+                  solid
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.editorSaveButton}
+                onPress={handleSaveNote}
+                hitSlop={{top: 10, bottom: 10, left: 6, right: 6}}>
+                <Icon name="check" size={20} color="#fff" solid />
+              </TouchableOpacity>
+              {editingNote && (
+                <TouchableOpacity
+                  style={styles.editorActionButton}
+                  onPress={() => {
+                    handleDeleteNote(editingNote);
+                    handleCancelEdit();
+                  }}
+                  hitSlop={{top: 10, bottom: 10, left: 6, right: 6}}>
+                  <Icon name="trash-alt" size={18} color="#34A853" solid />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          {/* Editor Body */}
+          <View style={styles.editorBody} pointerEvents="box-none">
+            <TextInput
+              style={styles.editorTitle}
+              placeholder="Title"
+              placeholderTextColor="#9AA0A6"
+              value={title}
+              onChangeText={text => {
+                pushToHistory(text, content);
+                setTitle(text);
+              }}
+              autoFocus={!editingNote}
+            />
+            <TextInput
+              style={styles.editorContent}
+              placeholder="Take a note..."
+              placeholderTextColor="#9AA0A6"
+              value={content}
+              onChangeText={text => {
+                pushToHistory(title, text);
+                setContent(text);
+              }}
+              multiline
+              textAlignVertical="top"
+            />
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    );
+  }
+
+  // Main notes list view
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header with hamburger menu */}
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.menuButton} onPress={onOpenDrawer}>
-          <Icon name="bars" size={22} color="#333" />
+          <Icon name="bars" size={22} color="#202124" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notes</Text>
       </View>
@@ -195,10 +353,10 @@ const NotesScreen: React.FC<NotesScreenProps> = ({onOpenDrawer}) => {
         columnWrapperStyle={styles.cardRow}
         contentContainerStyle={styles.notesList}
         ListEmptyComponent={
-          <View style={{alignItems: 'center', marginTop: 60}}>
-            <Icon name="sticky-note" size={40} color="#ccc" solid />
-            <Text style={styles.emptyText}>No notes yet</Text>
-            <Text style={{color: '#aaa', marginTop: 4}}>
+          <View style={styles.emptyContainer}>
+            <Icon name="sticky-note" size={48} color="#DADCE0" solid />
+            <Text style={styles.emptyTitle}>No notes yet</Text>
+            <Text style={styles.emptySubtitle}>
               Tap + to create your first note
             </Text>
           </View>
@@ -207,157 +365,134 @@ const NotesScreen: React.FC<NotesScreenProps> = ({onOpenDrawer}) => {
 
       {/* Floating Add Button */}
       <TouchableOpacity style={styles.fab} onPress={handleAddNewNote}>
-        <Icon name="plus" size={24} color="#fff" solid />
+        <Icon name="plus" size={26} color="#fff" solid />
       </TouchableOpacity>
-
-      {/* Edit/Add Note Modal */}
-      <Modal
-        visible={isModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={handleCancelEdit}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{paddingBottom: 20}}
-            keyboardShouldPersistTaps="handled">
-            <Text style={styles.modalTitle}>
-              {editingNote ? 'Edit Note' : 'New Note'}
-            </Text>
-            <TextInput
-              style={styles.inputTitle}
-              placeholder="Title"
-              placeholderTextColor="#999"
-              value={title}
-              onChangeText={setTitle}
-            />
-            <TextInput
-              style={styles.inputContent}
-              placeholder="Take a note..."
-              placeholderTextColor="#999"
-              value={content}
-              onChangeText={setContent}
-              multiline
-            />
-          </ScrollView>
-          <View style={styles.modalButtons}>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={handleCancelEdit}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.saveButton}
-              onPress={handleSaveNote}>
-              <Text style={styles.saveButtonText}>Save</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  // Main container
   container: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#F5F5F5',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  loadingText: {
+    fontSize: 16,
+    fontFamily: 'Roboto-Regular',
+    color: '#5F6368',
+  },
+
   // Header styles
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    borderBottomColor: '#E8EAED',
   },
   menuButton: {
     padding: 8,
-  },
-  menuIcon: {
-    fontSize: 22,
-    color: '#333',
+    marginLeft: -8,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontFamily: 'Roboto-Bold',
-    marginLeft: 16,
-    color: '#222',
+    marginLeft: 12,
+    color: '#202124',
   },
+
   // Grid layout for notes
   notesList: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingBottom: 120,
-    paddingTop: 12,
+    paddingTop: 14,
   },
   cardRow: {
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 12,
   },
+
   // Individual note card
   card: {
-    flex: 1,
-    marginHorizontal: 4,
-    backgroundColor: '#fff',
-    padding: 12,
+    width: (SCREEN_WIDTH - 40) / 2, // Fixed width for consistent grid
+    alignSelf: 'flex-start',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    elevation: 4,
+    elevation: 1,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    justifyContent: 'space-between',
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontFamily: 'Roboto-Bold',
-    color: '#111',
-    marginBottom: 6,
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    overflow: 'hidden',
   },
   cardContent: {
-    fontSize: 14,
+    padding: 12,
+    paddingBottom: 8,
+  },
+  cardTitle: {
+    fontSize: 15,
+    fontFamily: 'Roboto-Medium',
+    color: '#202124',
+    marginBottom: 6,
+    lineHeight: 22,
+  },
+  cardBody: {
+    fontSize: 13,
     fontFamily: 'Roboto-Regular',
-    color: '#555',
+    color: '#5F6368',
     lineHeight: 20,
-    marginBottom: 8,
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F3F4',
   },
   cardDate: {
     fontSize: 11,
     fontFamily: 'Roboto-Regular',
-    color: '#999',
-    marginBottom: 6,
+    color: '#9AA0A6',
   },
   cardActions: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    paddingTop: 6,
   },
   iconButton: {
-    padding: 6,
-    marginLeft: 8,
+    padding: 4,
   },
-  editIcon: {
+
+  // Empty state
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 80,
+    paddingHorizontal: 32,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontFamily: 'Roboto-Medium',
+    color: '#5F6368',
+    marginTop: 16,
+  },
+  emptySubtitle: {
     fontSize: 14,
+    fontFamily: 'Roboto-Regular',
+    color: '#9AA0A6',
+    marginTop: 4,
   },
-  deleteIcon: {
-    fontSize: 14,
-  },
+
   // Floating Action Button
   fab: {
     position: 'absolute',
@@ -366,90 +501,76 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#f4b400',
+    backgroundColor: '#FBBC04',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 3},
-    shadowOpacity: 0.3,
+    elevation: 3,
+    shadowColor: '#FBBC04',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.25,
     shadowRadius: 4,
   },
-  emptyText: {
-    textAlign: 'center',
-    color: '#999',
-    marginTop: 40,
-    fontSize: 16,
-    fontFamily: 'Roboto-Regular',
-  },
-  // Modal styles for add/edit
-  modalOverlay: {
+
+  // Full-screen Editor styles
+  editorContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: '#FFFFFF',
   },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    paddingBottom: 20,
-    maxHeight: SCREEN_HEIGHT * 0.8,
+  editorKeyboardView: {
+    flex: 1,
   },
-  modalTitle: {
-    fontSize: 20,
-    fontFamily: 'Roboto-Bold',
-    marginBottom: 16,
-    color: '#333',
-  },
-  inputTitle: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    fontFamily: 'Roboto-Regular',
-    marginBottom: 12,
-  },
-  inputContent: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-    fontFamily: 'Roboto-Regular',
-    minHeight: 100,
-    maxHeight: 150,
-    textAlignVertical: 'top',
-    marginBottom: 16,
-  },
-  modalButtons: {
+  editorHeader: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8EAED',
   },
-  cancelButton: {
-    marginRight: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#ddd',
+  editorBackButton: {
+    padding: 8,
   },
-  cancelButtonText: {
-    color: '#666',
-    fontWeight: '600',
-    fontFamily: 'Roboto-Medium',
+  editorRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  saveButton: {
-    backgroundColor: '#f0a500',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 20,
+  editorActionButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 8,
   },
-  saveButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontFamily: 'Roboto-Medium',
+  editorDeleteButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    marginRight: 4,
+  },
+  editorSaveButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#FBBC04',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editorBody: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  editorTitle: {
+    fontSize: 24,
+    fontFamily: 'Roboto-Bold',
+    color: '#202124',
+    marginBottom: 12,
+    paddingVertical: 6,
+  },
+  editorContent: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: 'Roboto-Regular',
+    color: '#202124',
+    lineHeight: 24,
+    textAlignVertical: 'top',
   },
 });
 

@@ -51,7 +51,8 @@ export const signInWithGoogle = async (): Promise<GoogleSignInResult> => {
 
     console.log('[GoogleDrive] signInWithGoogle: Signing in...');
     const userInfo = await GoogleSignin.signIn();
-    console.log('[GoogleDrive] signInWithGoogle: User signed in, email:', (userInfo as any).user?.email);
+    //console.log('[TEST] signInWith: ', userInfo);
+    console.log('[GoogleDrive] signInWithGoogle: User signed in, email:', (userInfo as any).data?.user?.email);
 
     console.log('[GoogleDrive] signInWithGoogle: Getting tokens...');
     const tokens = await GoogleSignin.getTokens();
@@ -63,7 +64,7 @@ export const signInWithGoogle = async (): Promise<GoogleSignInResult> => {
 
     return {
       accessToken: tokens.accessToken,
-      email: (userInfo as any).user?.email || '',
+      email: (userInfo as any)?.data?.user?.email || '',
     };
   } catch (error: any) {
     console.log('[GoogleDrive] signInWithGoogle: ERROR:', JSON.stringify(error));
@@ -302,7 +303,12 @@ export const backupToGoogleDrive = async (): Promise<boolean> => {
   try {
     console.log('[GoogleDrive] Step 1: Signing in to Google...');
     const {accessToken, email} = await signInWithGoogle();
+    //const TEST = await signInWithGoogle();
+     //console.log('TEST BEFORE : ', TEST);
+
     console.log('[GoogleDrive] Step 1: Got access token, email:', email);
+
+    //console.log('TEST AFTER : ', TEST);
 
     console.log('[GoogleDrive] Step 2: Fetching notes from database...');
     const notes = await getRawNotes();

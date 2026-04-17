@@ -82,13 +82,10 @@ const SettingsScreen: React.FC = () => {
 
   const handleSignIn = async () => {
     try {
-      console.log('[Settings] handleSignIn: Starting...');
       setIsLoading(true);
-      console.log('[Settings] handleSignIn: Calling GoogleSignin.signIn()...');
       await GoogleSignin.signIn();
-      console.log('[Settings] handleSignIn: Sign in successful, getting current user...');
       const currentUser = await GoogleSignin.getCurrentUser();
-      console.log('[Settings] handleSignIn: currentUser =', JSON.stringify(currentUser));
+      console.log("TESTING WHERE DATA COMING FROM : ",currentUser);
       if (currentUser?.user) {
         const profile: UserProfile = {
           name: currentUser.user.name || 'Guest User',
@@ -100,12 +97,7 @@ const SettingsScreen: React.FC = () => {
         setSignedIn(true);
       }
     } catch (error: any) {
-      console.log('[Settings] handleSignIn: ERROR =', JSON.stringify(error));
-      console.log('[Settings] handleSignIn: ERROR message =', error.message);
-      console.log('[Settings] handleSignIn: ERROR code =', error.code);
-      setTimeout(() => {
-        Alert.alert('Sign In Failed', error.message || 'Unknown error');
-      }, 100);
+      Alert.alert('Sign In Failed', error.message || 'Unknown error');
     } finally {
       setIsLoading(false);
     }
@@ -279,14 +271,13 @@ const SettingsScreen: React.FC = () => {
               <Text style={styles.profileEmail}>{userProfile?.email || 'Not signed in'}</Text>
             </View>
           ) : (
-            <>
-              <View style={{alignItems: 'center', marginTop: 40}}>
-                <Image
-                  source={require('../../assets/logo.png')}
-                  style={{width: 80, height: 80, marginBottom: 20}}
-                  resizeMode="contain"
-                />
-              </View>
+            <View style={styles.loggedOutContent}>
+              <Image
+                source={require('../../assets/logo.png')}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
+              <Text style={styles.appName}>KeepNotes</Text>
               <TouchableOpacity
                 style={styles.signInButton}
                 onPress={handleSignIn}
@@ -294,7 +285,7 @@ const SettingsScreen: React.FC = () => {
                 <Icon name="google" size={20} color="#fff" solid />
                 <Text style={styles.signInButtonText}>Sign In with Google</Text>
               </TouchableOpacity>
-            </>
+            </View>
           )}
         </View>
 
@@ -304,8 +295,8 @@ const SettingsScreen: React.FC = () => {
             <Text style={styles.sectionTitle}>Quick Actions</Text>
 
             <TouchableOpacity style={styles.actionCard} onPress={openBackupModal}>
-              <View style={styles.actionIconContainer}>
-                <Icon name="cloud-upload-alt" size={20} color="#4285F4" solid />
+              <View style={[styles.actionIconContainer, {backgroundColor: '#FFF8E1'}]}>
+                <Icon name="cloud-upload-alt" size={20} color="#FBBC04" solid />
               </View>
               <View style={styles.actionTextContainer}>
                 <Text style={styles.actionTitle}>Backup to Drive</Text>
@@ -314,7 +305,7 @@ const SettingsScreen: React.FC = () => {
             </TouchableOpacity>
             {lastBackup && (
               <Text style={styles.timestampText}>
-                Last backup: {new Date(lastBackup).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                Last backup: {new Date(lastBackup).toLocaleString()}
               </Text>
             )}
 
@@ -329,7 +320,7 @@ const SettingsScreen: React.FC = () => {
             </TouchableOpacity>
             {lastRestore && (
               <Text style={styles.timestampText}>
-                Last restore: {new Date(lastRestore).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                Last restore: {new Date(lastRestore).toLocaleString()}
               </Text>
             )}
           </>
@@ -429,22 +420,38 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 60,
   },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 20,
+    padding: 24,
     marginHorizontal: 16,
     marginTop: 20,
-    elevation: 2,
+    elevation: 1,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  loggedOutContent: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  logoImage: {
+    width: 80,
+    height: 80,
+    marginBottom: 16,
+  },
+  appName: {
+    fontSize: 22,
+    fontFamily: 'Roboto-Bold',
+    color: '#202124',
+    marginBottom: 24,
   },
   profileContent: {
     alignItems: 'center',
+    paddingVertical: 8,
   },
   avatar: {
     width: 80,
@@ -456,36 +463,43 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 18,
     fontFamily: 'Roboto-Bold',
-    color: '#333',
+    color: '#202124',
     marginBottom: 4,
   },
   profileEmail: {
     fontSize: 14,
     fontFamily: 'Roboto-Regular',
-    color: '#777',
+    color: '#5F6368',
   },
   signInButton: {
     flexDirection: 'row',
-    backgroundColor: '#4285F4',
+    backgroundColor: '#FBBC04',
     paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    paddingHorizontal: 24,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#FBBC04',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
   },
   signInButtonText: {
     fontSize: 16,
     fontFamily: 'Roboto-Medium',
-    color: '#fff',
+    color: '#202124',
     marginLeft: 10,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'Roboto-Medium',
-    color: '#333',
+    color: '#5F6368',
     marginHorizontal: 16,
     marginTop: 24,
     marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   actionCard: {
     flexDirection: 'row',
@@ -494,18 +508,18 @@ const styles = StyleSheet.create({
     padding: 16,
     marginHorizontal: 16,
     marginBottom: 12,
-    elevation: 2,
+    elevation: 1,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
     alignItems: 'center',
   },
   actionIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#e3f2fd',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#E8F0FE',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -516,28 +530,30 @@ const styles = StyleSheet.create({
   actionTitle: {
     fontSize: 16,
     fontFamily: 'Roboto-Medium',
-    color: '#333',
+    color: '#202124',
     marginBottom: 4,
   },
   actionSubtitle: {
     fontSize: 13,
     fontFamily: 'Roboto-Regular',
-    color: '#777',
+    color: '#5F6368',
   },
   timestampText: {
     fontSize: 12,
-    color: '#777',
-    marginTop: 6,
-    marginLeft: 8,
-    marginBottom: 12,
+    fontFamily: 'Roboto-Regular',
+    color: '#9AA0A6',
+    marginTop: 4,
+    marginLeft: 4,
+    marginBottom: 8,
   },
   logoutButton: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 12,
     marginHorizontal: 16,
+    marginTop: 8,
     marginBottom: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -553,30 +569,30 @@ const styles = StyleSheet.create({
   infoCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 16,
+    padding: 20,
     marginHorizontal: 16,
-    marginTop: 8,
-    elevation: 2,
+    marginTop: 16,
+    elevation: 1,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
   },
   infoTitle: {
     fontSize: 16,
     fontFamily: 'Roboto-Medium',
-    color: '#333',
+    color: '#202124',
     marginBottom: 12,
   },
   infoText: {
     fontSize: 13,
     fontFamily: 'Roboto-Regular',
-    color: '#777',
+    color: '#5F6368',
     marginBottom: 8,
     lineHeight: 20,
   },
   versionText: {
-    marginTop: 8,
+    marginTop: 12,
     marginBottom: 0,
   },
   modalOverlay: {
@@ -587,21 +603,21 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 24,
     width: '85%',
   },
   modalTitle: {
     fontSize: 20,
     fontFamily: 'Roboto-Bold',
-    color: '#333',
+    color: '#202124',
     marginBottom: 8,
   },
   modalSubtitle: {
     fontSize: 14,
     fontFamily: 'Roboto-Regular',
-    color: '#777',
-    marginBottom: 20,
+    color: '#5F6368',
+    marginBottom: 24,
     lineHeight: 20,
   },
   modalButtons: {
@@ -614,22 +630,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#DADCE0',
   },
   cancelButtonText: {
-    color: '#666',
-    fontWeight: '600',
+    color: '#5F6368',
+    fontWeight: '500',
     fontFamily: 'Roboto-Medium',
   },
   confirmButton: {
-    backgroundColor: '#4285F4',
+    backgroundColor: '#FBBC04',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
   },
   confirmButtonText: {
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: '500',
     fontFamily: 'Roboto-Medium',
   },
   disabledButton: {

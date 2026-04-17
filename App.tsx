@@ -20,6 +20,8 @@ const App: React.FC = () => {
   const [activeScreen, setActiveScreen] = useState<Screen>('notes');
   // Track if drawer is open
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  // Track if editor is visible (hides bottom nav when true)
+  const [isEditorVisible, setIsEditorVisible] = useState(false);
 
   // Open drawer
   const openDrawer = () => setIsDrawerOpen(true);
@@ -38,7 +40,7 @@ const App: React.FC = () => {
 
       {/* Main content based on active screen */}
       {activeScreen === 'notes' ? (
-        <NotesScreen onOpenDrawer={openDrawer} />
+        <NotesScreen onOpenDrawer={openDrawer} onEditorVisibleChange={setIsEditorVisible} />
       ) : (
         <SettingsScreen />
       )}
@@ -59,7 +61,7 @@ const App: React.FC = () => {
           {/* Drawer content */}
           <View style={styles.drawerContent}>
             <View style={styles.drawerLogoContainer}>
-              <Icon name="sticky-note" size={32} color="#f0a500" solid />
+              <Icon name="sticky-note" size={32} color="#FBBC04" solid />
             </View>
             <Text style={styles.drawerTitle}>Menu</Text>
             <TouchableOpacity
@@ -71,7 +73,7 @@ const App: React.FC = () => {
               <Icon
                 name="clipboard"
                 size={18}
-                color={activeScreen === 'notes' ? '#f0a500' : '#666'}
+                color={activeScreen === 'notes' ? '#FBBC04' : '#666'}
                 solid
               />
               <Text
@@ -91,7 +93,7 @@ const App: React.FC = () => {
               <Icon
                 name="cog"
                 size={18}
-                color={activeScreen === 'settings' ? '#f0a500' : '#666'}
+                color={activeScreen === 'settings' ? '#FBBC04' : '#666'}
                 solid
               />
               <Text
@@ -107,42 +109,44 @@ const App: React.FC = () => {
       </Modal>
 
       {/* Bottom Navigation Bar */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => setActiveScreen('notes')}>
-          <Icon
-            name="clipboard"
-            size={22}
-            color={activeScreen === 'notes' ? '#f0a500' : '#999'}
-            solid
-          />
-          <Text
-            style={[
-              styles.navText,
-              activeScreen === 'notes' && styles.navTextActive,
-            ]}>
-            Notes
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => setActiveScreen('settings')}>
-          <Icon
-            name="cog"
-            size={22}
-            color={activeScreen === 'settings' ? '#f0a500' : '#999'}
-            solid
-          />
-          <Text
-            style={[
-              styles.navText,
-              activeScreen === 'settings' && styles.navTextActive,
-            ]}>
-            Settings
-          </Text>
-        </TouchableOpacity>
-      </View>
+      {!isEditorVisible && (
+        <View style={styles.bottomNav}>
+          <TouchableOpacity
+            style={styles.navItem}
+            onPress={() => setActiveScreen('notes')}>
+            <Icon
+              name="clipboard"
+              size={22}
+              color={activeScreen === 'notes' ? '#FBBC04' : '#999'}
+              solid
+            />
+            <Text
+              style={[
+                styles.navText,
+                activeScreen === 'notes' && styles.navTextActive,
+              ]}>
+              Notes
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.navItem}
+            onPress={() => setActiveScreen('settings')}>
+            <Icon
+              name="cog"
+              size={22}
+              color={activeScreen === 'settings' ? '#FBBC04' : '#999'}
+              solid
+            />
+            <Text
+              style={[
+                styles.navText,
+                activeScreen === 'settings' && styles.navTextActive,
+              ]}>
+              Settings
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -150,7 +154,7 @@ const App: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#F5F5F5',
   },
   // Drawer styles
   drawerOverlay: {
@@ -187,7 +191,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   drawerItemActive: {
-    backgroundColor: '#fff3e0',
+    backgroundColor: '#FFF8E1',
   },
   drawerText: {
     fontSize: 16,
@@ -196,7 +200,7 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
   drawerTextActive: {
-    color: '#f0a500',
+    color: '#FBBC04',
     fontWeight: '600',
   },
   // Bottom Navigation styles
@@ -220,7 +224,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   navTextActive: {
-    color: '#f0a500',
+    color: '#FBBC04',
     fontWeight: '600',
   },
 });

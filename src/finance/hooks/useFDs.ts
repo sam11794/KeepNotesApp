@@ -62,8 +62,8 @@ export const useFDs = () => {
   const maturingSoonFDs = useMemo(() => {
     const now = Math.floor(Date.now() / 1000);
     const twentyDaysLater = now + (20 * 24 * 60 * 60);
-    const twentyDaysAgo = now - (20 * 24 * 60 * 60);
-    return fds.filter(fd => fd.maturity_date >= twentyDaysAgo && fd.maturity_date <= twentyDaysLater);
+    // Show ALL matured FDs (any past date) + upcoming within 20 days
+    return fds.filter(fd => fd.maturity_date <= twentyDaysLater);
   }, [fds]);
 
   return {

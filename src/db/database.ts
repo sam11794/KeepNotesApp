@@ -17,6 +17,31 @@ export interface Note {
   updated_at: number;
 }
 
+// ==================== FD INTERFACES ====================
+export interface FD {
+  id: number;
+  person_name: string;
+  bank_name: string;
+  fd_number: string;
+  principal_amount: number;
+  interest_rate: number;
+  start_date: number;
+  maturity_date: number;
+  maturity_amount: number;
+  created_at: number;
+}
+
+export interface FDInput {
+  person_name: string;
+  bank_name: string;
+  fd_number: string;
+  principal_amount: number;
+  interest_rate: number;
+  start_date: number;
+  maturity_date: number;
+  maturity_amount: number;
+}
+
 /**
  * Initialize the SQLite database
  * Creates the 'notes.db' database and 'notes' table if they don't exist
@@ -61,7 +86,23 @@ export const initDB = async (): Promise<void> => {
     // Column may already exist, ignore error
   }
 
-  console.log('DB: Table created successfully');
+  // Create fds table
+  await db.executeSql(`
+    CREATE TABLE IF NOT EXISTS fds (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      person_name TEXT,
+      bank_name TEXT,
+      fd_number TEXT,
+      principal_amount REAL,
+      interest_rate REAL,
+      start_date INTEGER,
+      maturity_date INTEGER,
+      maturity_amount REAL,
+      created_at INTEGER
+    )
+  `);
+
+  console.log('DB: Tables created successfully');
 };
 
 /**
@@ -239,4 +280,73 @@ export const deleteNote = async (id: number): Promise<void> => {
   await db!.executeSql('DELETE FROM notes WHERE id = ?', [id]);
 
   console.log('DB: Note deleted, id:', id);
+};
+
+// ==================== FD FUNCTIONS ====================
+
+export const getAllFDs = async (): Promise<FD[]> => {
+  if (!db) {
+    await initDB();
+  }
+
+  const [result] = await db!.executeSql('SELECT * FROM fds ORDER BY maturity_date ASC');
+
+  const fds: FD[] = [];
+  for (let i = 0; i < result.rows.length; i++) {
+    const row = result.rows.item(i);
+    fds.push({
+      id: row.id,
+      person_name: row.person_name || '',
+      bank_name: row.bank_name || '',
+      fd_number: row.fd_number || '',
+      principal_amount: row.principal_amount || 0,
+      interest_rate: row.interest_rate || 0,
+      start_date: row.start_date || 0,
+      maturity_date: row.maturity_date || 0,
+      maturity_amount: row.maturity_amount || 0,
+      created_at: row.created_at || 0,
+    });
+  }
+
+  console.log('DB: Fetched', fds.length, 'FDs');
+  return fds;
+};
+
+export const addFD = async (fd: FDInput): Promise<number> => {
+  if (!db) {
+    await initDB();
+  }
+
+  const created_at = Math.floor(Date.now() / 1000);
+
+  const [result] = await db!.executeSql(
+    `INSERT INTO fds (person_name, bank_name, fd_number, principal_amount, interest_rate, start_date, maturity_date, maturity_amount, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [fd.person_name, fd.bank_name, fd.fd_number, fd.principal_amount, fd.interest_rate, fd.start_date, fd.maturity_date, fd.maturity_amount, created_at]
+  );
+
+  console.log('DB: FD added, id:', result.insertId);
+  return result.insertId;
+};
+
+export const updateFD = async (id: number, fd: FDInput): Promise<void> => {
+  if (!db) {
+    await initDB();
+  }
+
+  await db!.executeSql(
+    `UPDATE fds SET person_name = ?, bank_name = ?, fd_number = ?, principal_amount = ?, interest_rate = ?, start_date = ?, maturity_date = ?, maturity_amount = ? WHERE id = ?`,
+    [fd.person_name, fd.bank_name, fd.fd_number, fd.principal_amount, fd.interest_rate, fd.start_date, fd.maturity_date, fd.maturity_amount, id]
+  );
+
+  console.log('DB: FD updated, id:', id);
+};
+
+export const deleteFD = async (id: number): Promise<void> => {
+  if (!db) {
+    await initDB();
+  }
+
+  await db!.executeSql('DELETE FROM fds WHERE id = ?', [id]);
+  console.log('DB: FD deleted, id:', id);
 };

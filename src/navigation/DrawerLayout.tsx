@@ -3,7 +3,7 @@ import {View, Modal, Animated, Text, TouchableOpacity, Image} from 'react-native
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import {drawerStyles} from '../styles/drawerStyles';
 
-type Screen = 'notes' | 'settings';
+type Screen = 'notes' | 'settings' | 'finance';
 
 interface DrawerLayoutProps {
   isOpen: boolean;
@@ -42,6 +42,12 @@ export const DrawerLayout: React.FC<DrawerLayoutProps> = ({
               <Icon name="lightbulb" size={20} color={activeScreen === 'notes' ? '#FBBC04' : '#5F6368'} solid />
             </View>
             <Text style={[drawerStyles.drawerText, activeScreen === 'notes' && drawerStyles.drawerTextActive]}>Notes</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={drawerStyles.drawerItem} onPress={() => onNavigate('finance')} activeOpacity={0.7}>
+            <View style={[drawerStyles.drawerItemIcon, activeScreen === 'finance' && drawerStyles.drawerItemIconActive]}>
+              <Icon name="landmark" size={20} color={activeScreen === 'finance' ? '#FBBC04' : '#5F6368'} solid />
+            </View>
+            <Text style={[drawerStyles.drawerText, activeScreen === 'finance' && drawerStyles.drawerTextActive]}>Finance</Text>
           </TouchableOpacity>
           <TouchableOpacity style={drawerStyles.drawerItem} onPress={() => onNavigate('settings')} activeOpacity={0.7}>
             <View style={[drawerStyles.drawerItemIcon, activeScreen === 'settings' && drawerStyles.drawerItemIconActive]}>

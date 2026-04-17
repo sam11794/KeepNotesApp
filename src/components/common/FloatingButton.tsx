@@ -1,7 +1,7 @@
 import React from 'react';
 import {TouchableOpacity} from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
-import {notesStyles} from '../../styles/notesStyles';
+import {notesStyles} from '../../notes/styles/notesStyles';
 
 interface FloatingButtonProps {
   onPress: () => void;

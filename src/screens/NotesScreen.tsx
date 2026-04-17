@@ -40,6 +40,8 @@ const NotesScreen: React.FC<NotesScreenProps> = ({onOpenDrawer, onEditorVisibleC
   // Undo/Redo state
   const [history, setHistory] = useState<{title: string; content: string}[]>([]);
   const [redoStack, setRedoStack] = useState<{title: string; content: string}[]>([]);
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Load notes when component mounts
   useEffect(() => {
@@ -83,6 +85,16 @@ const NotesScreen: React.FC<NotesScreenProps> = ({onOpenDrawer, onEditorVisibleC
   useEffect(() => {
     onEditorVisibleChange(isFullScreenEditorVisible);
   }, [isFullScreenEditorVisible, onEditorVisibleChange]);
+
+  // Compute filtered notes
+  const filteredNotes = notes.filter(note => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      note.title.toLowerCase().includes(query) ||
+      note.content.toLowerCase().includes(query)
+    );
+  });
 
   // Push state to history when text changes
   const pushToHistory = useCallback((newTitle: string, newContent: string) => {
@@ -210,13 +222,16 @@ const NotesScreen: React.FC<NotesScreenProps> = ({onOpenDrawer, onEditorVisibleC
       </TouchableOpacity>
       <View style={styles.cardFooter}>
         <Text style={styles.cardDate}>
-          {new Date(item.created_at * 1000).toLocaleString('en-GB', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
+          {(() => {
+            const ts = item.updated_at > item.created_at ? item.updated_at : item.created_at;
+            const d = new Date(ts * 1000);
+            const dd = String(d.getDate()).padStart(2, '0');
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const yyyy = d.getFullYear();
+            const hh = String(d.getHours()).padStart(2, '0');
+            const min = String(d.getMinutes()).padStart(2, '0');
+            return `${dd}/${mm}/${yyyy}, ${hh}:${min}`;
+          })()}
         </Text>
         <TouchableOpacity
           style={styles.iconButton}
@@ -344,9 +359,28 @@ const NotesScreen: React.FC<NotesScreenProps> = ({onOpenDrawer, onEditorVisibleC
         <Text style={styles.headerTitle}>Notes</Text>
       </View>
 
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBar}>
+          <Icon name="search" size={16} color="#9AA0A6" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search notes..."
+            placeholderTextColor="#9AA0A6"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
+              <Icon name="times-circle" size={16} color="#9AA0A6" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
       {/* Notes Grid - 2 columns like Google Keep */}
       <FlatList
-        data={notes}
+        data={filteredNotes}
         renderItem={renderNoteCard}
         keyExtractor={item => item.id.toString()}
         numColumns={2}
@@ -354,10 +388,12 @@ const NotesScreen: React.FC<NotesScreenProps> = ({onOpenDrawer, onEditorVisibleC
         contentContainerStyle={styles.notesList}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Icon name="sticky-note" size={48} color="#DADCE0" solid />
-            <Text style={styles.emptyTitle}>No notes yet</Text>
+            <Icon name={searchQuery ? "search" : "sticky-note"} size={48} color="#DADCE0" solid />
+            <Text style={styles.emptyTitle}>
+              {searchQuery ? 'No notes found' : 'No notes yet'}
+            </Text>
             <Text style={styles.emptySubtitle}>
-              Tap + to create your first note
+              {searchQuery ? 'Try a different search term' : 'Tap + to create your first note'}
             </Text>
           </View>
         }
@@ -407,6 +443,37 @@ const styles = StyleSheet.create({
     fontFamily: 'Roboto-Bold',
     marginLeft: 12,
     color: '#202124',
+  },
+
+  // Search Bar styles
+  searchContainer: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8EAED',
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F3F4',
+    borderRadius: 24,
+    paddingHorizontal: 12,
+    height: 44,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: 'Roboto-Regular',
+    color: '#202124',
+    paddingVertical: 0,
+  },
+  clearButton: {
+    padding: 4,
+    marginLeft: 4,
   },
 
   // Grid layout for notes
@@ -523,21 +590,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8EAED',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#fff',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
   },
   editorBackButton: {
-    padding: 8,
+    padding: 10,
   },
   editorRightActions: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 4,
   },
   editorActionButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
   },
   editorDeleteButton: {
     paddingHorizontal: 8,

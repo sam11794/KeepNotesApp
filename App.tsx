@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,16 @@ import {
   SafeAreaView,
   StatusBar,
   Modal,
+  Animated,
+  Dimensions,
+  Image,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import NotesScreen from './src/screens/NotesScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const DRAWER_WIDTH = SCREEN_WIDTH * 0.80; // 80% of screen width
 
 // Simple screen types
 type Screen = 'notes' | 'settings';
@@ -20,13 +26,53 @@ const App: React.FC = () => {
   const [activeScreen, setActiveScreen] = useState<Screen>('notes');
   // Track if drawer is open
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  // Track if editor is visible (hides bottom nav when true)
+  // Track if editor is visible (used by NotesScreen)
   const [isEditorVisible, setIsEditorVisible] = useState(false);
+  // Animation values for drawer
+  const drawerSlideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
+  const overlayAnim = useRef(new Animated.Value(0)).current;
+
+  // Animate drawer open when isDrawerOpen becomes true
+  useEffect(() => {
+    if (isDrawerOpen) {
+      Animated.parallel([
+        Animated.timing(drawerSlideAnim, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(overlayAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [isDrawerOpen]);
 
   // Open drawer
-  const openDrawer = () => setIsDrawerOpen(true);
+  const openDrawer = () => {
+    if (isDrawerOpen) return;
+    setIsDrawerOpen(true);
+  };
+
   // Close drawer
-  const closeDrawer = () => setIsDrawerOpen(false);
+  const closeDrawer = () => {
+    Animated.parallel([
+      Animated.timing(drawerSlideAnim, {
+        toValue: -DRAWER_WIDTH,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(overlayAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsDrawerOpen(false);
+    });
+  };
 
   // Navigate to a screen and close drawer
   const navigateTo = (screen: Screen) => {
@@ -42,40 +88,63 @@ const App: React.FC = () => {
       {activeScreen === 'notes' ? (
         <NotesScreen onOpenDrawer={openDrawer} onEditorVisibleChange={setIsEditorVisible} />
       ) : (
-        <SettingsScreen />
+        <SettingsScreen onBack={() => setActiveScreen('notes')} />
       )}
 
       {/* Side Drawer Modal */}
       <Modal
         visible={isDrawerOpen}
-        animationType="slide"
+        animationType="none"
         transparent={true}
         onRequestClose={closeDrawer}>
         <View style={styles.drawerOverlay}>
           {/* Tap outside to close */}
-          <TouchableOpacity
-            style={styles.drawerBackdrop}
-            onPress={closeDrawer}
-            activeOpacity={1}
-          />
-          {/* Drawer content */}
-          <View style={styles.drawerContent}>
-            <View style={styles.drawerLogoContainer}>
-              <Icon name="sticky-note" size={32} color="#FBBC04" solid />
-            </View>
-            <Text style={styles.drawerTitle}>Menu</Text>
+          <Animated.View
+            style={[styles.drawerBackdrop, {opacity: overlayAnim}]}>
             <TouchableOpacity
-              style={[
-                styles.drawerItem,
-                activeScreen === 'notes' && styles.drawerItemActive,
-              ]}
-              onPress={() => navigateTo('notes')}>
-              <Icon
-                name="clipboard"
-                size={18}
-                color={activeScreen === 'notes' ? '#FBBC04' : '#666'}
-                solid
+              style={styles.drawerBackdropTouch}
+              onPress={closeDrawer}
+              activeOpacity={1}
+            />
+          </Animated.View>
+          {/* Drawer content */}
+          <Animated.View
+            style={[
+              styles.drawerContent,
+              {transform: [{translateX: drawerSlideAnim}]},
+            ]}>
+            {/* Profile Section */}
+            <View style={styles.drawerProfileSection}>
+              <Image
+                source={require('./assets/logo.png')}
+                style={styles.drawerLogo}
+                resizeMode="contain"
               />
+              <View style={styles.drawerProfileInfo}>
+                <Text style={styles.drawerUserName}>KeepNotes</Text>
+                <Text style={styles.drawerUserEmail}>Your notes, organized</Text>
+              </View>
+            </View>
+
+            {/* Divider */}
+            <View style={styles.drawerDivider} />
+
+            {/* Menu Items */}
+            <TouchableOpacity
+              style={styles.drawerItem}
+              onPress={() => navigateTo('notes')}
+              activeOpacity={0.7}>
+              <View style={[
+                styles.drawerItemIcon,
+                activeScreen === 'notes' && styles.drawerItemIconActive,
+              ]}>
+                <Icon
+                  name="lightbulb"
+                  size={20}
+                  color={activeScreen === 'notes' ? '#FBBC04' : '#5F6368'}
+                  solid
+                />
+              </View>
               <Text
                 style={[
                   styles.drawerText,
@@ -84,18 +153,22 @@ const App: React.FC = () => {
                 Notes
               </Text>
             </TouchableOpacity>
+
             <TouchableOpacity
-              style={[
-                styles.drawerItem,
-                activeScreen === 'settings' && styles.drawerItemActive,
-              ]}
-              onPress={() => navigateTo('settings')}>
-              <Icon
-                name="cog"
-                size={18}
-                color={activeScreen === 'settings' ? '#FBBC04' : '#666'}
-                solid
-              />
+              style={styles.drawerItem}
+              onPress={() => navigateTo('settings')}
+              activeOpacity={0.7}>
+              <View style={[
+                styles.drawerItemIcon,
+                activeScreen === 'settings' && styles.drawerItemIconActive,
+              ]}>
+                <Icon
+                  name="cog"
+                  size={20}
+                  color={activeScreen === 'settings' ? '#FBBC04' : '#5F6368'}
+                  solid
+                />
+              </View>
               <Text
                 style={[
                   styles.drawerText,
@@ -104,49 +177,9 @@ const App: React.FC = () => {
                 Settings
               </Text>
             </TouchableOpacity>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
-
-      {/* Bottom Navigation Bar */}
-      {!isEditorVisible && (
-        <View style={styles.bottomNav}>
-          <TouchableOpacity
-            style={styles.navItem}
-            onPress={() => setActiveScreen('notes')}>
-            <Icon
-              name="clipboard"
-              size={22}
-              color={activeScreen === 'notes' ? '#FBBC04' : '#999'}
-              solid
-            />
-            <Text
-              style={[
-                styles.navText,
-                activeScreen === 'notes' && styles.navTextActive,
-              ]}>
-              Notes
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.navItem}
-            onPress={() => setActiveScreen('settings')}>
-            <Icon
-              name="cog"
-              size={22}
-              color={activeScreen === 'settings' ? '#FBBC04' : '#999'}
-              solid
-            />
-            <Text
-              style={[
-                styles.navText,
-                activeScreen === 'settings' && styles.navTextActive,
-              ]}>
-              Settings
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
     </SafeAreaView>
   );
 };
@@ -165,67 +198,93 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
+  drawerBackdropTouch: {
+    flex: 1,
+    width: '100%',
+  },
   drawerContent: {
-    width: 250,
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: DRAWER_WIDTH,
     backgroundColor: '#fff',
-    paddingTop: 40,
-    paddingHorizontal: 20,
+    paddingTop: 48,
+    paddingHorizontal: 0,
+    borderTopRightRadius: 16,
+    borderBottomRightRadius: 16,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: {width: 2, height: 0},
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    zIndex: 1,
   },
-  drawerLogoContainer: {
+  // Profile Section
+  drawerProfileSection: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    marginBottom: 8,
   },
-  drawerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+  drawerLogo: {
+    width: 44,
+    height: 44,
+  },
+  drawerProfileInfo: {
+    marginLeft: 16,
+    flex: 1,
+  },
+  drawerUserName: {
+    fontSize: 18,
     fontFamily: 'Roboto-Bold',
-    color: '#333',
-    marginBottom: 30,
+    color: '#202124',
+    marginBottom: 2,
   },
+  drawerUserEmail: {
+    fontSize: 13,
+    fontFamily: 'Roboto-Regular',
+    color: '#5F6368',
+  },
+  // Divider
+  drawerDivider: {
+    height: 1,
+    backgroundColor: '#E8EAED',
+    marginHorizontal: 20,
+    marginVertical: 8,
+  },
+  // Menu Items
   drawerItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginHorizontal: 8,
+    borderRadius: 24,
+    marginBottom: 4,
   },
-  drawerItemActive: {
+  drawerItemIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  drawerItemIconActive: {
     backgroundColor: '#FFF8E1',
   },
   drawerText: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'Roboto-Regular',
-    color: '#333',
-    marginLeft: 16,
+    color: '#5F6368',
+    marginLeft: 12,
   },
   drawerTextActive: {
-    color: '#FBBC04',
-    fontWeight: '600',
-  },
-  // Bottom Navigation styles
-  bottomNav: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    paddingVertical: 8,
-    paddingBottom: 20, // Extra padding for safe area on some devices
-  },
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  navText: {
-    fontSize: 12,
-    fontFamily: 'Roboto-Regular',
-    color: '#999',
-    marginTop: 4,
-  },
-  navTextActive: {
-    color: '#FBBC04',
-    fontWeight: '600',
+    color: '#202124',
+    fontFamily: 'Roboto-Medium',
+    fontWeight: '500',
   },
 });
 

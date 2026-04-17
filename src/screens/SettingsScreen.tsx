@@ -9,6 +9,7 @@ import {
   Modal,
   Image,
   ScrollView,
+  BackHandler,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -23,7 +24,11 @@ import Icon from 'react-native-vector-icons/FontAwesome5';
 // Initialize Google Sign-In when module loads
 initGoogleSignIn();
 
-const SettingsScreen: React.FC = () => {
+interface SettingsScreenProps {
+  onBack: () => void;
+}
+
+const SettingsScreen: React.FC<SettingsScreenProps> = ({onBack}) => {
   const [isBackupModalVisible, setIsBackupModalVisible] = useState(false);
   const [isRestoreModalVisible, setIsRestoreModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -32,15 +37,15 @@ const SettingsScreen: React.FC = () => {
   const [lastBackup, setLastBackup] = useState<string | null>(null);
   const [lastRestore, setLastRestore] = useState<string | null>(null);
 
+  // Handle system back button
   useEffect(() => {
-    console.log('[Settings] useEffect: Mounting...');
-    try {
-      loadUserProfile();
-      loadTimestamps();
-    } catch (error: any) {
-      console.log('[Settings] useEffect: ERROR:', error.message, error.stack);
-    }
-  }, []);
+    const backAction = () => {
+      onBack();
+      return true;
+    };
+    const subscription = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => subscription.remove();
+  }, [onBack]);
 
   const loadUserProfile = async () => {
     const user = await getUser();
@@ -255,6 +260,14 @@ const SettingsScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header with back button */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+          <Icon name="arrow-left" size={20} color="#202124" solid />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Settings</Text>
+      </View>
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -415,6 +428,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8EAED',
+  },
+  backButton: {
+    padding: 8,
+    marginLeft: -8,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontFamily: 'Roboto-Bold',
+    marginLeft: 12,
+    color: '#202124',
   },
   scrollView: {
     flex: 1,

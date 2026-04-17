@@ -14,6 +14,7 @@ export interface Note {
   title: string;
   content: string;
   created_at: number;
+  updated_at: number;
 }
 
 /**
@@ -42,14 +43,23 @@ export const initDB = async (): Promise<void> => {
   // - title: text for note title (can be empty)
   // - content: text for note content (ENCRYPTED before storing)
   // - created_at: timestamp when note was created
+  // - updated_at: timestamp when note was last edited
   await db.executeSql(`
     CREATE TABLE IF NOT EXISTS notes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT,
       content TEXT,
-      created_at INTEGER
+      created_at INTEGER,
+      updated_at INTEGER
     )
   `);
+
+  // Add updated_at column if it doesn't exist (for existing databases)
+  try {
+    await db.executeSql('ALTER TABLE notes ADD COLUMN updated_at INTEGER');
+  } catch (e) {
+    // Column may already exist, ignore error
+  }
 
   console.log('DB: Table created successfully');
 };
@@ -101,6 +111,7 @@ export const addNote = async (title: string, content: string): Promise<number> =
   // ============================================================
   console.log('STEP 2: Preparing timestamp...');
   const created_at = Math.floor(Date.now() / 1000);
+  const updated_at = created_at;
   console.log('  created_at:', created_at);
 
   // ============================================================
@@ -113,14 +124,14 @@ export const addNote = async (title: string, content: string): Promise<number> =
   // STEP 4: Insert into database
   // ============================================================
   console.log('STEP 4: Inserting into database...');
-  console.log('  SQL: INSERT INTO notes (title, content, created_at) VALUES (?, ?, ?)');
-  console.log('  Params: [', title, ', ', content.substring(0, 50) + '...', ', ', created_at, ']');
+  console.log('  SQL: INSERT INTO notes (title, content, created_at, updated_at) VALUES (?, ?, ?, ?)');
+  console.log('  Params: [', title, ', ', content.substring(0, 50) + '...', ', ', created_at, ', ', updated_at, ']');
 
   let result: SQLite.ResultSet;
   try {
     [result] = await db!.executeSql(
-      'INSERT INTO notes (title, content, created_at) VALUES (?, ?, ?)',
-      [title, content, created_at]
+      'INSERT INTO notes (title, content, created_at, updated_at) VALUES (?, ?, ?, ?)',
+      [title, content, created_at, updated_at]
     );
     console.log('STEP 4: DB INSERT SUCCESS');
     console.log('  result.insertId:', result.insertId);
@@ -173,6 +184,7 @@ export const fetchNotes = async (): Promise<Note[]> => {
       title: row.title || '',
       content: row.content || '',
       created_at: row.created_at,
+      updated_at: row.updated_at || row.created_at,
     };
     notes.push(note);
   }
@@ -201,10 +213,12 @@ export const updateNote = async (
     await initDB();
   }
 
+  const updated_at = Math.floor(Date.now() / 1000);
+
   // Store plain text (no encryption for local DB)
   await db!.executeSql(
-    'UPDATE notes SET title = ?, content = ? WHERE id = ?',
-    [title, content, id]
+    'UPDATE notes SET title = ?, content = ?, updated_at = ? WHERE id = ?',
+    [title, content, updated_at, id]
   );
 
   console.log('DB: Note updated, id:', id);

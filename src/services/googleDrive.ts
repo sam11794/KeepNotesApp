@@ -11,6 +11,33 @@ interface Note {
   title: string;
   content: string;
   created_at: number;
+  updated_at?: number;
+}
+
+// FD interface for backup data
+interface FD {
+  id: number;
+  person_name: string;
+  bank_name: string;
+  fd_number: string;
+  principal_amount: number;
+  interest_rate: number;
+  start_date: number;
+  maturity_date: number;
+  maturity_amount: number;
+  created_at: number;
+}
+
+// Backup payload structures
+interface BackupModules {
+  notes: Note[];
+  fds: FD[];
+}
+
+interface BackupPayload {
+  version: "2.0";
+  timestamp: string;
+  modules: BackupModules;
 }
 
 // Your Web Client ID
@@ -278,7 +305,8 @@ const getRawNotes = async (): Promise<Note[]> => {
 const addNoteDirect = async (
   title: string,
   content: string,
-  created_at: number
+  created_at: number,
+  updated_at?: number
 ): Promise<void> => {
   const SQLite = require('react-native-sqlite-storage');
   SQLite.enablePromise(true);
@@ -288,9 +316,54 @@ const addNoteDirect = async (
     location: 'default',
   });
 
+  const finalUpdatedAt = updated_at || created_at;
   await db.executeSql(
-    'INSERT INTO notes (title, content, created_at) VALUES (?, ?, ?)',
-    [title, content, created_at]
+    'INSERT INTO notes (title, content, created_at, updated_at) VALUES (?, ?, ?, ?)',
+    [title, content, created_at, finalUpdatedAt]
+  );
+};
+
+/**
+ * Get FDs from SQLite (for backup)
+ */
+const getRawFDs = async (): Promise<FD[]> => {
+  const SQLite = require('react-native-sqlite-storage');
+  SQLite.enablePromise(true);
+
+  const db = await SQLite.openDatabase({
+    name: 'notes.db',
+    location: 'default',
+  });
+
+  const [result] = await db.executeSql(
+    'SELECT * FROM fds ORDER BY created_at ASC'
+  );
+
+  const fds: FD[] = [];
+  for (let i = 0; i < result.rows.length; i++) {
+    const row = result.rows.item(i);
+    fds.push(row);
+  }
+
+  return fds;
+};
+
+/**
+ * Insert FD directly (for restore)
+ */
+const addFDDirect = async (fd: FD): Promise<void> => {
+  const SQLite = require('react-native-sqlite-storage');
+  SQLite.enablePromise(true);
+
+  const db = await SQLite.openDatabase({
+    name: 'notes.db',
+    location: 'default',
+  });
+
+  await db.executeSql(
+    `INSERT INTO fds (person_name, bank_name, fd_number, principal_amount, interest_rate, start_date, maturity_date, maturity_amount, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [fd.person_name, fd.bank_name, fd.fd_number, fd.principal_amount, fd.interest_rate, fd.start_date, fd.maturity_date, fd.maturity_amount, fd.created_at]
   );
 };
 
@@ -303,21 +376,32 @@ export const backupToGoogleDrive = async (): Promise<boolean> => {
   try {
     console.log('[GoogleDrive] Step 1: Signing in to Google...');
     const {accessToken, email} = await signInWithGoogle();
-    //const TEST = await signInWithGoogle();
-     //console.log('TEST BEFORE : ', TEST);
 
     console.log('[GoogleDrive] Step 1: Got access token, email:', email);
 
-    //console.log('TEST AFTER : ', TEST);
-
-    console.log('[GoogleDrive] Step 2: Fetching notes from database...');
+    console.log('[GoogleDrive] Step 2: Fetching data from database...');
     const notes = await getRawNotes();
-    console.log('[GoogleDrive] Step 2: Got', notes.length, 'notes');
-    if (notes.length === 0) throw new Error('No notes');
+    const fds = await getRawFDs();
+    console.log('[GoogleDrive] Step 2: Got', notes.length, 'notes and', fds.length, 'FDs');
 
-    console.log('[GoogleDrive] Step 3: Encrypting notes...');
+    // Build versioned backup payload
+    const backupPayload: BackupPayload = {
+      version: "2.0",
+      timestamp: new Date().toISOString(),
+      modules: {
+        notes,
+        fds,
+      },
+    };
+
+    // Check if there's anything to backup
+    if (notes.length === 0 && fds.length === 0) {
+      throw new Error('No notes or FDs to backup');
+    }
+
+    console.log('[GoogleDrive] Step 3: Encrypting backup payload...');
     const {encryptData} = require('../utils/crypto');
-    const encrypted = encryptData(notes, email);
+    const encrypted = encryptData(backupPayload, email);
     console.log('[GoogleDrive] Step 3: Encryption complete');
 
     console.log('[GoogleDrive] Step 4: Getting/creating backup folder...');
@@ -343,7 +427,9 @@ export const backupToGoogleDrive = async (): Promise<boolean> => {
  */
 export const restoreFromGoogleDrive = async (): Promise<{
   notes: Note[];
+  fds: FD[];
   addNoteDirect: typeof addNoteDirect;
+  addFDDirect: typeof addFDDirect;
 }> => {
   console.log('[GoogleDrive] ===== RESTORE FLOW START =====');
 
@@ -367,10 +453,27 @@ export const restoreFromGoogleDrive = async (): Promise<{
 
   const {decryptData} = require('../utils/crypto');
 
-  const notes = decryptData(JSON.parse(encryptedJson), email);
+  const decrypted = decryptData(JSON.parse(encryptedJson), email);
 
-  if (!notes) throw new Error('Decryption failed');
+  if (!decrypted) throw new Error('Decryption failed');
+
+  // Detect backup format
+  let notes: Note[] = [];
+  let fds: FD[] = [];
+
+  if ('version' in decrypted && 'modules' in decrypted) {
+    // New versioned format
+    console.log('[GoogleDrive] restore: Detected versioned backup format v2.0');
+    notes = decrypted.modules?.notes || [];
+    fds = decrypted.modules?.fds || [];
+  } else {
+    // Legacy format (notes-only)
+    console.log('[GoogleDrive] restore: Detected legacy backup format');
+    notes = decrypted || [];
+  }
+
+  console.log('[GoogleDrive] restore: Extracted', notes.length, 'notes and', fds.length, 'FDs');
 
   console.log('[GoogleDrive] ===== RESTORE FLOW SUCCESS =====');
-  return {notes, addNoteDirect};
+  return {notes, fds, addNoteDirect, addFDDirect};
 };

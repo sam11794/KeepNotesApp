@@ -72,7 +72,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onBack}) => {
       await backupToGoogleDrive();
       await AsyncStorage.setItem('last_backup_time', new Date().toISOString());
       setLastBackup(new Date().toISOString());
-      Alert.alert('Success', 'Notes backed up to Google Drive successfully!');
+      Alert.alert('Success', 'Notes and FDs backed up to Google Drive successfully!');
       setIsBackupModalVisible(false);
     } catch (error: any) { Alert.alert('Backup Failed', error.message || error.code || 'Unknown error'); }
     finally { setIsLoading(false); }
@@ -81,30 +81,78 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onBack}) => {
   const handleRestore = async () => {
     setIsLoading(true);
     try {
-      const {notes: restoredNotes, addNoteDirect} = await restoreFromGoogleDrive();
-      if (!restoredNotes || restoredNotes.length === 0) { Alert.alert('No Data', 'No notes found in backup'); setIsRestoreModalVisible(false); setIsLoading(false); return; }
-      Alert.alert('Restore Notes', `Found ${restoredNotes.length} notes. How would you like to restore?`, [
+      const {notes: restoredNotes, fds: restoredFDs, addNoteDirect, addFDDirect} = await restoreFromGoogleDrive();
+
+      const notesCount = restoredNotes?.length || 0;
+      const fdsCount = restoredFDs?.length || 0;
+
+      if (notesCount === 0 && fdsCount === 0) {
+        Alert.alert('No Data', 'No notes or FDs found in backup');
+        setIsRestoreModalVisible(false);
+        setIsLoading(false);
+        return;
+      }
+
+      const foundMsg = `Found ${notesCount} notes and ${fdsCount} FDs. How would you like to restore?`;
+      Alert.alert('Restore Data', foundMsg, [
         {text: 'Cancel', style: 'cancel', onPress: () => { setIsRestoreModalVisible(false); setIsLoading(false); }},
-        {text: 'Merge', onPress: () => mergeNotes(restoredNotes, addNoteDirect)},
-        {text: 'Replace All', style: 'destructive', onPress: () => replaceAllNotes(restoredNotes, addNoteDirect)},
+        {text: 'Merge', onPress: () => mergeAll(restoredNotes, restoredFDs, addNoteDirect, addFDDirect)},
+        {text: 'Replace All', style: 'destructive', onPress: () => replaceAll(restoredNotes, restoredFDs, addNoteDirect, addFDDirect)},
       ]);
       setIsRestoreModalVisible(false);
     } catch (error: any) { Alert.alert('Restore Failed', error.message || 'Unknown error'); setIsLoading(false); }
   };
 
-  const mergeNotes = async (restoredNotes: Array<{id: number; title: string; content: string; created_at: number}>, addNoteDirect: Function) => {
-    try { for (const note of restoredNotes) { await addNoteDirect(note.title, note.content, note.created_at); } await AsyncStorage.setItem('last_restore_time', new Date().toISOString()); setLastRestore(new Date().toISOString()); Alert.alert('Success', 'Notes merged successfully!'); }
-    catch (error: any) { Alert.alert('Merge Failed', error.message); }
+  const mergeAll = async (
+    restoredNotes: Array<{id: number; title: string; content: string; created_at: number; updated_at?: number}>,
+    restoredFDs: Array<{id: number; person_name: string; bank_name: string; fd_number: string; principal_amount: number; interest_rate: number; start_date: number; maturity_date: number; maturity_amount: number; created_at: number}>,
+    addNoteDirect: Function,
+    addFDDirect: Function
+  ) => {
+    try {
+      // Merge notes
+      for (const note of restoredNotes) {
+        await addNoteDirect(note.title, note.content, note.created_at, note.updated_at);
+      }
+
+      // Merge FDs
+      for (const fd of restoredFDs) {
+        await addFDDirect(fd);
+      }
+
+      await AsyncStorage.setItem('last_restore_time', new Date().toISOString());
+      setLastRestore(new Date().toISOString());
+      Alert.alert('Success', 'Notes and FDs merged successfully!');
+    } catch (error: any) { Alert.alert('Merge Failed', error.message); }
     finally { setIsLoading(false); }
   };
 
-  const replaceAllNotes = async (restoredNotes: Array<{id: number; title: string; content: string; created_at: number}>, addNoteDirect: Function) => {
+  const replaceAll = async (
+    restoredNotes: Array<{id: number; title: string; content: string; created_at: number; updated_at?: number}>,
+    restoredFDs: Array<{id: number; person_name: string; bank_name: string; fd_number: string; principal_amount: number; interest_rate: number; start_date: number; maturity_date: number; maturity_amount: number; created_at: number}>,
+    addNoteDirect: Function,
+    addFDDirect: Function
+  ) => {
     try {
-      const SQLite = require('react-native-sqlite-storage'); SQLite.enablePromise(true);
+      const SQLite = require('react-native-sqlite-storage');
+      SQLite.enablePromise(true);
       const db = await SQLite.openDatabase({name: 'notes.db', location: 'default'});
+
+      // Clear and replace notes
       await db.executeSql('DELETE FROM notes');
-      for (const note of restoredNotes) { await addNoteDirect(note.title, note.content, note.created_at); }
-      await AsyncStorage.setItem('last_restore_time', new Date().toISOString()); setLastRestore(new Date().toISOString()); Alert.alert('Success', 'Notes restored successfully!');
+      for (const note of restoredNotes) {
+        await addNoteDirect(note.title, note.content, note.created_at, note.updated_at);
+      }
+
+      // Clear and replace FDs
+      await db.executeSql('DELETE FROM fds');
+      for (const fd of restoredFDs) {
+        await addFDDirect(fd);
+      }
+
+      await AsyncStorage.setItem('last_restore_time', new Date().toISOString());
+      setLastRestore(new Date().toISOString());
+      Alert.alert('Success', 'Notes and FDs restored successfully!');
     } catch (error: any) { Alert.alert('Restore Failed', error.message); }
     finally { setIsLoading(false); }
   };
@@ -158,7 +206,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onBack}) => {
         {signedIn && <TouchableOpacity style={settingsStyles.logoutButton} onPress={handleLogout}><Icon name="sign-out-alt" size={18} color="#e74c3c" solid /><Text style={settingsStyles.logoutButtonText}>Sign Out</Text></TouchableOpacity>}
         <View style={settingsStyles.infoCard}>
           <Text style={settingsStyles.infoTitle}>About Backup</Text>
-          <Text style={settingsStyles.infoText}>- Your notes are encrypted with your Google account</Text>
+          <Text style={settingsStyles.infoText}>- Your notes and FDs are encrypted with your Google account</Text>
           <Text style={settingsStyles.infoText}>- Only the encrypted file is stored on Google Drive</Text>
           <Text style={settingsStyles.infoText}>- Sign in with the same account to restore</Text>
           <Text style={[settingsStyles.infoText, settingsStyles.versionText]}>App version: 1.0.0</Text>
@@ -180,7 +228,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onBack}) => {
         <View style={settingsStyles.modalOverlay}>
           <View style={settingsStyles.modalContent}>
             <Text style={settingsStyles.modalTitle}>Restore from Google Drive</Text>
-            <Text style={settingsStyles.modalSubtitle}>Sign in with the same Google account you used for backup to restore your notes.</Text>
+            <Text style={settingsStyles.modalSubtitle}>Sign in with the same Google account you used for backup to restore your notes and FDs.</Text>
             <View style={settingsStyles.modalButtons}>
               <TouchableOpacity style={settingsStyles.cancelButton} onPress={() => setIsRestoreModalVisible(false)} disabled={isLoading}><Text style={settingsStyles.cancelButtonText}>Cancel</Text></TouchableOpacity>
               <TouchableOpacity style={[settingsStyles.confirmButton, isLoading && settingsStyles.disabledButton]} onPress={handleRestore} disabled={isLoading}><Text style={settingsStyles.confirmButtonText}>{isLoading ? 'Restoring...' : 'Restore'}</Text></TouchableOpacity>

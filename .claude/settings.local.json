@@ -15,7 +15,8 @@
       "Bash(npm list:*)",
       "Bash(npx react-native-asset:*)",
       "Bash(cp appicononline.png ic_launcher.png)",
-      "Bash(cp appicononline.png ic_launcher_round.png)"
+      "Bash(cp appicononline.png ic_launcher_round.png)",
+      "Bash(./gradlew clean *)"
     ]
   }
 }

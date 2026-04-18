@@ -8,6 +8,7 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
+  Share,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import {useFDs} from '../hooks/useFDs';
@@ -17,12 +18,14 @@ interface FDListScreenProps {
   onOpenDrawer?: () => void;
   onBack?: () => void;
   initialFDId?: number;
+  // NEW: edit mode support
+  onEditFD?: (fd: FD) => void;
 }
 
 type FilterType = 'all' | 'active' | 'matured';
 type SortType = 'maturity' | 'amount' | 'interest';
 
-export const FDListScreen: React.FC<FDListScreenProps> = ({onOpenDrawer, onBack, initialFDId}) => {
+export const FDListScreen: React.FC<FDListScreenProps> = ({onOpenDrawer, onBack, initialFDId, onEditFD}) => {
   const {
     fds,
     loadFDs,
@@ -171,24 +174,71 @@ export const FDListScreen: React.FC<FDListScreenProps> = ({onOpenDrawer, onBack,
     );
   };
 
-  const exportToCSV = () => {
-    const headers = ['Person Name', 'Bank Name', 'FD Number', 'Principal Amount', 'Interest Rate', 'Start Date', 'Maturity Date', 'Maturity Amount'];
+  // UPDATE: generate CSV string from filtered data
+  const generateCSV = (): string => {
+    const headers = ['Person Name', 'Bank Name', 'FD Number', 'Amount', 'Interest Rate', 'Start Date', 'Maturity Date', 'Maturity Amount'];
     const rows = filteredFDs.map(fd => [
-      fd.person_name,
-      fd.bank_name,
-      fd.fd_number,
+      `"${fd.person_name}"`,
+      `"${fd.bank_name}"`,
+      `"${fd.fd_number}"`,
       fd.principal_amount.toString(),
       fd.interest_rate.toString(),
       formatDate(fd.start_date),
       formatDate(fd.maturity_date),
       fd.maturity_amount.toString()
     ]);
+    return [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  };
 
-    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    console.log('=== FD EXPORT (CSV) ===');
-    console.log(csvContent);
-    console.log('======================');
-    Alert.alert('Export Complete', `CSV logged to console.\n\nFiltered count: ${filteredFDs.length} of ${fds.length}`);
+  const exportToCSV = async () => {
+    try {
+      const csvContent = generateCSV();
+      await Share.share({
+        title: 'FD Export (CSV)',
+        message: csvContent,
+      });
+    } catch (error) {
+      console.log('CSV Export error:', error);
+      Alert.alert('Export Failed', 'Could not export CSV');
+    }
+  };
+
+  // UPDATE: export to JSON using Share API
+  const exportToJSON = async () => {
+    try {
+      const exportData = filteredFDs.map(fd => ({
+        person_name: fd.person_name,
+        bank_name: fd.bank_name,
+        fd_number: fd.fd_number,
+        principal_amount: fd.principal_amount,
+        interest_rate: fd.interest_rate,
+        start_date: formatDate(fd.start_date),
+        maturity_date: formatDate(fd.maturity_date),
+        maturity_amount: fd.maturity_amount,
+      }));
+
+      const jsonContent = JSON.stringify({fds: exportData}, null, 2);
+      await Share.share({
+        title: 'FD Export (JSON)',
+        message: jsonContent,
+      });
+    } catch (error) {
+      console.log('JSON Export error:', error);
+      Alert.alert('Export Failed', 'Could not export JSON');
+    }
+  };
+
+  // UPDATE: show export options
+  const showExportOptions = () => {
+    if (filteredFDs.length === 0) {
+      Alert.alert('No Data', 'No FDs to export');
+      return;
+    }
+    Alert.alert('Export FDs', `Export ${filteredFDs.length} filtered FDs`, [
+      {text: 'Cancel', style: 'cancel'},
+      {text: 'CSV', onPress: exportToCSV},
+      {text: 'JSON', onPress: exportToJSON},
+    ]);
   };
 
   const renderFDItem = ({item}: {item: FD}) => {
@@ -206,9 +256,17 @@ export const FDListScreen: React.FC<FDListScreenProps> = ({onOpenDrawer, onBack,
             <Text style={styles.fdPersonName}>{item.person_name}</Text>
             <Text style={styles.fdBankName}>{item.bank_name}</Text>
           </View>
-          <TouchableOpacity onPress={() => handleDeleteFD(item)} style={styles.deleteBtn}>
-            <Icon name="trash-alt" size={16} color="#EA4335" solid />
-          </TouchableOpacity>
+          <View style={styles.cardActions}>
+            {/* NEW: edit button */}
+            {onEditFD && (
+              <TouchableOpacity onPress={() => onEditFD(item)} style={styles.editBtn}>
+                <Icon name="edit" size={16} color="#4285F4" solid />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity onPress={() => handleDeleteFD(item)} style={styles.deleteBtn}>
+              <Icon name="trash-alt" size={16} color="#EA4335" solid />
+            </TouchableOpacity>
+          </View>
         </View>
         <View style={styles.fdCardDetails}>
           <View style={styles.fdRow}>
@@ -254,7 +312,7 @@ export const FDListScreen: React.FC<FDListScreenProps> = ({onOpenDrawer, onBack,
           </TouchableOpacity>
         ) : null}
         <Text style={styles.headerTitle}>All Fixed Deposits</Text>
-        <TouchableOpacity style={styles.exportBtn} onPress={exportToCSV}>
+        <TouchableOpacity style={styles.exportBtn} onPress={showExportOptions}>
           <Icon name="file-export" size={18} color="#5F6368" solid />
         </TouchableOpacity>
       </View>
@@ -675,6 +733,15 @@ const styles = StyleSheet.create({
   },
   deleteBtn: {
     padding: 4,
+  },
+  // NEW: edit button styles
+  editBtn: {
+    padding: 4,
+    marginRight: 4,
+  },
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   fdCardDetails: {},
   fdRow: {

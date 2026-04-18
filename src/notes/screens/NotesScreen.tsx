@@ -1,5 +1,7 @@
 import React, {useState, useEffect, useCallback} from 'react';
-import {View, Text, TextInput, StyleSheet, SafeAreaView, BackHandler, Alert} from 'react-native';
+import {View, Text, TextInput, StyleSheet, SafeAreaView, BackHandler, Alert, TouchableOpacity} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Icon from 'react-native-vector-icons/FontAwesome5';
 import {initDB, Note} from '../../../src/db/database';
 import {useNotes} from '../hooks/useNotes';
 import {CustomHeader} from '../../components/common/CustomHeader';
@@ -23,9 +25,26 @@ export const NotesScreen: React.FC<NotesScreenProps> = ({onOpenDrawer, onEditorV
   const [redoStack, setRedoStack] = useState<{title: string; content: string}[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // NEW: hide/view toggle state
+  const [isHidden, setIsHidden] = useState(false);
+
+  // NEW: load persisted visibility preference
+  useEffect(() => {
+    AsyncStorage.getItem('notes_visibility_mode').then(val => {
+      if (val !== null) setIsHidden(val === 'hidden');
+    });
+  }, []);
+
   useEffect(() => {
     initNotes();
   }, []);
+
+  // NEW: persist visibility preference
+  useEffect(() => {
+    AsyncStorage.setItem('notes_visibility_mode', isHidden ? 'hidden' : 'visible');
+  }, [isHidden]);
+
+  const toggleHidden = () => setIsHidden(prev => !prev);
 
   useEffect(() => {
     onEditorVisibleChange(isFullScreenEditorVisible);
@@ -165,12 +184,16 @@ export const NotesScreen: React.FC<NotesScreenProps> = ({onOpenDrawer, onEditorV
   return (
     <SafeAreaView style={notesStyles.container}>
       <CustomHeader title="Notes" onMenuPress={onOpenDrawer} showMenu />
-      <View style={notesStyles.searchContainer}>
-        <View style={notesStyles.searchBar}>
+      {/* NEW: hide/view toggle in header area */}
+      <View style={notesStyles.toolbar}>
+        <View style={notesStyles.searchBarWrap}>
           <TextInput style={notesStyles.searchInput} placeholder="Search notes..." placeholderTextColor="#9AA0A6" value={searchQuery} onChangeText={setSearchQuery} />
         </View>
+        <TouchableOpacity style={notesStyles.visibilityToggle} onPress={toggleHidden}>
+          <Icon name={isHidden ? 'eye-slash' : 'eye'} size={18} color={isHidden ? '#EA4335' : '#34A853'} solid />
+        </TouchableOpacity>
       </View>
-      <NotesGrid notes={filteredNotes} searchQuery={searchQuery} onNotePress={handleEditNote} onNoteDelete={handleDeleteNoteConfirm} />
+      <NotesGrid notes={filteredNotes} searchQuery={searchQuery} onNotePress={handleEditNote} onNoteDelete={handleDeleteNoteConfirm} isHidden={isHidden} />
       <FloatingButton onPress={handleAddNewNote} />
     </SafeAreaView>
   );

@@ -72,6 +72,39 @@ export const notesStyles = StyleSheet.create({
     marginLeft: 4,
   },
 
+  // NEW: toolbar with visibility toggle
+  toolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    gap: 10,
+  },
+  searchBarWrap: {
+    flex: 1,
+    backgroundColor: '#F1F3F4',
+    borderRadius: 24,
+    paddingHorizontal: 12,
+    height: 44,
+  },
+  visibilityToggle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F1F3F4',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  visibilityToggleText: {
+    fontSize: 13,
+    fontFamily: 'Roboto-Medium',
+    color: '#34A853',
+  },
+  visibilityToggleTextHidden: {
+    color: '#EA4335',
+  },
+
   // Grid layout for notes
   notesList: {
     paddingHorizontal: 14,

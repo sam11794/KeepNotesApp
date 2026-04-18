@@ -10,6 +10,8 @@ interface NotesGridProps {
   searchQuery: string;
   onNotePress: (note: Note) => void;
   onNoteDelete: (note: Note) => void;
+  // NEW: hide/view toggle
+  isHidden?: boolean;
 }
 
 export const NotesGrid: React.FC<NotesGridProps> = ({
@@ -17,9 +19,10 @@ export const NotesGrid: React.FC<NotesGridProps> = ({
   searchQuery,
   onNotePress,
   onNoteDelete,
+  isHidden = false,
 }) => {
   const renderItem = ({item}: {item: Note}) => (
-    <NoteCard note={item} onPress={onNotePress} onDelete={onNoteDelete} />
+    <NoteCard note={item} onPress={onNotePress} onDelete={onNoteDelete} isHidden={isHidden} />
   );
 
   return (

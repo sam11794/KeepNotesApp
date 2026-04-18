@@ -8,9 +8,11 @@ interface NoteCardProps {
   note: Note;
   onPress: (note: Note) => void;
   onDelete: (note: Note) => void;
+  // NEW: hide content toggle
+  isHidden?: boolean;
 }
 
-export const NoteCard: React.FC<NoteCardProps> = ({note, onPress, onDelete}) => {
+export const NoteCard: React.FC<NoteCardProps> = ({note, onPress, onDelete, isHidden = false}) => {
   const formatDate = (ts: number) => {
     const d = new Date(ts * 1000);
     const dd = String(d.getDate()).padStart(2, '0');
@@ -30,7 +32,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({note, onPress, onDelete}) => 
           {note.title || 'Untitled'}
         </Text>
         <Text style={notesStyles.cardBody} numberOfLines={5}>
-          {note.content}
+          {isHidden ? '• • • • • • • •' : note.content}
         </Text>
       </TouchableOpacity>
       <View style={notesStyles.cardFooter}>
